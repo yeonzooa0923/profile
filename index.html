@@ -1,0 +1,2013 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOOP 프로필 팩토리 - 마스터 에디터 전용 빌더</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - 다채로운 프리미엄 한글/영문 폰트 라이브러리 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&family=Nanum+Neo:wght@400;700;800&family=Gaegu:wght@400;700&family=Black+Han+Sans&family=Jua&family=Dongle:wght@450;700&family=Gowun+Batang:wght@400;700&family=Bagel+Fat+One&family=Gowun+Dodum&family=Do+Hyeon&family=Yeon+Sung&family=Orbit&family=Single+Day&family=Poor+Story&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'Inter', 'sans-serif'],
+                        neo: ['Nanum Neo', 'sans-serif'],
+                        cute: ['Gaegu', 'sans-serif'],
+                        impact: ['Black Han Sans', 'sans-serif'],
+                        jua: ['Jua', 'sans-serif'],
+                        dongle: ['Dongle', 'sans-serif'],
+                        batang: ['Gowun Batang', 'serif'],
+                        bagel: ['Bagel Fat One', 'cursive'],
+                        dodum: ['Gowun Dodum', 'sans-serif'],
+                        dohyeon: ['Do Hyeon', 'sans-serif'],
+                        yeonsung: ['Yeon Sung', 'serif'],
+                        orbit: ['Orbit', 'sans-serif'],
+                        singleday: ['Single Day', 'cursive'],
+                        poorstory: ['Poor Story', 'system-ui'],
+                    },
+                    boxShadow: {
+                        'premium': '0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                        'neo': '6px 6px 0px 0px rgba(0, 0, 0, 1)',
+                        'neo-sm': '4px 4px 0px 0px rgba(0, 0, 0, 1)',
+                        'neon-pink': '0 0 15px rgba(244, 63, 94, 0.6)',
+                        'neon-emerald': '0 0 15px rgba(16, 185, 129, 0.6)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .preview-pane {
+            background-size: 20px 20px;
+            background-image: linear-gradient(to right, #1e293b 1px, transparent 1px), linear-gradient(to bottom, #1e293b 1px, transparent 1px);
+        }
+        /* 뽀용 아바타 애니메이션 */
+        @keyframes bouncy {
+            0%, 100% { transform: scale(1); }
+            30% { transform: scale(1.15, 0.85); }
+            50% { transform: scale(0.9, 1.1) rotate(-1.5deg); }
+            80% { transform: scale(1.05, 0.95) rotate(1deg); }
+        }
+        .bouncy-hover:hover {
+            animation: bouncy 0.65s ease-in-out;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- 상단 마스터 에디터 전용 헤더 내비게이션 -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-40">
+        <div class="flex items-center gap-3">
+            <div class="bg-gradient-to-tr from-emerald-500 to-teal-400 p-2.5 rounded-xl shadow-lg shadow-emerald-500/20">
+                <i class="fa-solid fa-crown text-xl text-slate-950"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-lg tracking-tight flex items-center gap-2">
+                    SOOP <span class="text-emerald-400 font-black">PROFILE FACTORY</span>
+                    <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-0.5 rounded-full font-bold border border-emerald-500/20">연주아 PRO WORKSPACE</span>
+                </h1>
+                <p class="text-xs text-slate-400">마스터 연주아님 전용 - 스트리머 고객 맞춤형 100% 단일 파일 웹프로필 고성능 대행 빌더</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <button id="btn-load-demo" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2 border border-slate-700">
+                <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> 예시 데이터 로드
+            </button>
+            <button id="btn-export-html" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-5 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+                <i class="fa-solid fa-code"></i> 프로필 파일(.html) 내보내기
+            </button>
+        </div>
+    </header>
+
+    <!-- 토스트 메시지 수신기 -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- 메인 대시보드 레이아웃 -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        
+        <!-- 좌측 컨트롤 패널 (수정 영역) -->
+        <aside class="w-full lg:w-[480px] xl:w-[580px] bg-slate-900 border-r border-slate-800 flex flex-col overflow-y-auto">
+            
+            <!-- 조작 옵션 탭 헤더 -->
+            <div class="flex border-b border-slate-800 bg-slate-950/80 sticky top-0 z-10 backdrop-blur">
+                <button onclick="switchTab('design')" id="tab-btn-design" class="flex-1 py-3 text-sm font-bold border-b-2 border-emerald-400 text-emerald-400 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-palette"></i> 1. 테마/디자인
+                </button>
+                <button onclick="switchTab('modules')" id="tab-btn-modules" class="flex-1 py-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-cubes"></i> 2. 모듈 활성화 & 타이틀
+                </button>
+                <button onclick="switchTab('data')" id="tab-btn-data" class="flex-1 py-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-pen-to-square"></i> 3. 상세 편집
+                </button>
+            </div>
+
+            <div class="p-6 space-y-8">
+                
+                <!-- [탭 1] 디자인 및 비주얼 테마 설정 -->
+                <div id="tab-content-design" class="space-y-6">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">🎨 고품격 테마 프리셋 선택 (20가지 유니크 감성)</h3>
+                        <div class="grid grid-cols-2 gap-3 max-h-85 overflow-y-auto pr-1" id="theme-presets-grid">
+                            <!-- JS에서 테마 프리셋 목록 주입 -->
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-800/60 pt-6">
+                        <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">⚙️ 정밀 비주얼 디테일 세팅</h3>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">대표 폰트 스타일 (15종 최고 가독성)</label>
+                                    <select id="cfg-font" onchange="updatePreview()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+                                        <option value="font-sans">Pretendard / Noto Sans (기본 깔끔)</option>
+                                        <option value="font-neo">나눔스퀘어 네오 (정갈하고 고급스러움)</option>
+                                        <option value="font-cute">개구쟁이 Gaegu (초귀엽고 발랄함)</option>
+                                        <option value="font-impact">블랙한산스 Black Han Sans (강렬한 임팩트)</option>
+                                        <option value="font-jua">배달의민족 주아 (동글동글 친근함)</option>
+                                        <option value="font-dongle">동글이 Dongle (귀여운 스포티 룩)</option>
+                                        <option value="font-batang">고운바탕 Gowun Batang (클래식/감성 서사)</option>
+                                        <option value="font-bagel">베이글팻원 Bagel Fat (두껍고 톡톡 튀는 맛)</option>
+                                        <option value="font-dodum">고운돋움 Gowun Dodum (서정적인 슬림 고딕)</option>
+                                        <option value="font-dohyeon">도현 Do Hyeon (듬직하고 볼드한 타이틀감)</option>
+                                        <option value="font-yeonsung">연성 Yeon Sung (유려한 붓글씨 아우라)</option>
+                                        <option value="font-orbit">오빗 Orbit (감성적인 우주 SF 라운드)</option>
+                                        <option value="font-singleday">싱글데이 Single Day (러블리 손편지 무드)</option>
+                                        <option value="font-poorstory">푸어스토리 Poor Story (소꿉놀이 낙서 감성)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1 flex justify-between">
+                                        <span>글씨 크기 (기본 스케일)</span>
+                                        <span id="cfg-font-size-label" class="text-emerald-400 font-bold">보통 (16px)</span>
+                                    </label>
+                                    <div class="h-[42px] flex items-center bg-slate-950 border border-slate-800 rounded-xl px-3">
+                                        <input type="range" id="cfg-font-size" min="12" max="22" step="2" value="16" oninput="updateFontSizeLabel(this.value); updatePreview();" class="w-full accent-emerald-500 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">대표 포인트 색상</label>
+                                    <div class="flex gap-2">
+                                        <input type="color" id="cfg-color-primary" onchange="updatePreview()" class="w-10 h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-800">
+                                        <input type="text" id="cfg-color-primary-text" oninput="syncColorInput('primary')" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 text-xs text-slate-200 text-center font-mono">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">보조 포인트 색상</label>
+                                    <div class="flex gap-2">
+                                        <input type="color" id="cfg-color-secondary" onchange="updatePreview()" class="w-10 h-10 rounded-lg cursor-pointer bg-slate-950 border border-slate-800">
+                                        <input type="text" id="cfg-color-secondary-text" oninput="syncColorInput('secondary')" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2 text-xs text-slate-200 text-center font-mono">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">전체 배경 톤 (7가지)</label>
+                                    <select id="cfg-bg-style" onchange="updatePreview()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200">
+                                        <option value="light">밝고 러블리한 파스텔 화이트</option>
+                                        <option value="dark">시크하고 강렬한 다크 딥그레이</option>
+                                        <option value="midnight" selected>신비롭고 묵직한 심해 미드나잇</option>
+                                        <option value="cozy">따스한 차 한 잔 코지 샌드베이지</option>
+                                        <option value="pastel-pink">말랑말랑 달콤 베이비핑크</option>
+                                        <option value="pastel-blue">시원하고 청명한 소다블루</option>
+                                        <option value="monochrome">시크하고 세련된 미니멀 모노그레이</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-slate-400 mb-1">카드 테두리 및 모서리 (14가지)</label>
+                                    <select id="cfg-border-style" onchange="updatePreview()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200">
+                                        <option value="rounded-2xl shadow-premium">둥글둥글 라운드 & 프리미엄 그림자</option>
+                                        <option value="rounded-none border-4 border-slate-950 shadow-neo">뉴트로 직각 볼드 라인 & 네오 그림자</option>
+                                        <option value="rounded-xl border border-white/20 backdrop-blur-md">투명 글래스모피즘 (트렌디 매트)</option>
+                                        <option value="rounded-2xl border-4 border-dashed border-emerald-400 shadow-premium">도트 자수 러블리 점선 테두리</option>
+                                        <option value="rounded-2xl border-2 border-transparent bg-gradient-to-tr from-pink-500 to-purple-500 [background-clip:padding-box,border-box] shadow-neon-pink">네온 아우라 그라데이션 광채</option>
+                                        <option value="rounded-3xl border-4 border-double border-slate-800">클래식 엘레강스 앙상블 더블 프레임</option>
+                                        <option value="rounded-xl border-l-8 border-emerald-500 shadow-md">미래형 하이테크 사이드 데코바</option>
+                                        <option value="rounded-lg border-2 border-amber-800 shadow-inner">종이 질감 빈티지 다이어리 크래프트</option>
+                                        <option value="rounded-[2.5rem] border border-slate-300">몽글몽글 벌룬 하이퍼 라운드</option>
+                                        <option value="rounded-md border border-slate-200">미니멀리스트 클린 초슬림 모서리</option>
+                                        <option value="rounded-[2.5rem] border-4 border-double border-pink-300 shadow-premium">공주풍 리본 무드 엠보싱 더블 프레임</option>
+                                        <option value="rounded-3xl border-4 border-slate-950 shadow-neo">팝아트 키치 볼드 둥근 테두리</option>
+                                        <option value="rounded-2xl border-2 border-dashed border-slate-400 dark:border-slate-600">친환경 다이어리 감성 수제 손그림 실선</option>
+                                        <option value="rounded-2xl border-4 border-amber-500/80 shadow-lg">프레지던트 골든 글로우 황금빛 액자 무드</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-slate-400 mb-1">배경 무늬(패턴)</label>
+                                <select id="cfg-bg-pattern" onchange="updatePreview()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-slate-200">
+                                    <option value="pattern-dots">잔잔한 도트 격자 무늬</option>
+                                    <option value="pattern-grid">격자 체크 모눈종이 무늬</option>
+                                    <option value="pattern-stripes">스포티한 대각선 스트라이프</option>
+                                    <option value="pattern-clean">심플하고 깔끔한 무늬 없음</option>
+                                </select>
+                            </div>
+
+                            <!-- 프로필 다크모드 설정 -->
+                            <div class="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
+                                <span class="block text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-moon text-indigo-400"></i> 생성용 다크모드(Light/Dark) 시스템 컨트롤
+                                </span>
+                                <p class="text-[10px] text-slate-500">배포될 프로필에 방문자가 수동으로 라이트/다크모드를 바꿀 수 있는 플로팅 토글러를 생성합니다.</p>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[11px] text-slate-400 mb-1">기본 로딩 테마</label>
+                                        <select id="cfg-darkmode-default" onchange="updatePreview()" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200">
+                                            <option value="light">라이트모드(Light) 시작</option>
+                                            <option value="dark" selected>다크모드(Dark) 시작</option>
+                                            <option value="system">시스템 설정 감지</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] text-slate-400 mb-1">전환 스위치 노출</label>
+                                        <select id="cfg-darkmode-switch" onchange="updatePreview()" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200">
+                                            <option value="show" selected>플로팅 토글 노출 (권장)</option>
+                                            <option value="hide">토글 숨김 (고정 모드)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 배경 애니메이션 설정 -->
+                            <div class="p-4 bg-slate-950 rounded-xl border border-slate-800/80 space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <span class="block text-xs font-bold text-slate-200">배경 비주얼 애니메이션 스위치</span>
+                                        <span class="block text-[10px] text-slate-500">배경에 커스텀 이모지가 자연스럽게 움직입니다.</span>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="cfg-anim-float" onchange="updatePreview()" checked class="sr-only peer">
+                                        <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-5 after:width-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                    </label>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[11px] text-slate-400 mb-1">애니메이션 방향</label>
+                                        <select id="cfg-anim-direction" onchange="updatePreview()" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200">
+                                            <option value="float-up">아래에서 위로 (상승)</option>
+                                            <option value="fall-down">위에서 아래로 (강하)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] text-slate-400 mb-1">이동 속도 조절</label>
+                                        <select id="cfg-anim-speed" onchange="updatePreview()" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200">
+                                            <option value="slow">차분하게 (천천히)</option>
+                                            <option value="normal" selected>부드럽게 (보통)</option>
+                                            <option value="fast">다이내믹 (빠르게)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-slate-400 mb-1">화면에 표시할 이모지 리스트 (쉼표 분할)</label>
+                                    <input type="text" id="cfg-anim-emojis" value="🍀,✨,💚,🌱" oninput="updatePreview()" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 font-mono">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- [탭 2] 조립용 모듈 온/오프 및 노출명 커스터마이징 -->
+                <div id="tab-content-modules" class="space-y-4 hidden">
+                    <div class="p-4 bg-slate-950 rounded-xl border border-slate-800">
+                        <h4 class="text-xs font-bold text-emerald-400 mb-1 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-info"></i> 모듈 노출명 및 ON/OFF 활성화 설정
+                        </h4>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">
+                            사용을 원치 않는 모듈을 비활성화하거나, 사이트 미리보기에 보여질 모듈 이름을 자유롭게 수정해 보세요. (예: "WEEKLY SCHEDULE"을 "요일별 방송 공지"로 수정 가능)
+                        </p>
+                    </div>
+
+                    <div class="space-y-3" id="modules-list">
+                        <!-- JS에서 모든 12종 모듈 리스트 렌더링 -->
+                    </div>
+                </div>
+
+                <!-- [탭 3] 데이터 내용 상세 에디터 -->
+                <div id="tab-content-data" class="space-y-6 hidden">
+                    <!-- 기본 정보 -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-4">
+                        <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-gear"></i> 기본 정보 및 방송국 연계
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] text-slate-400 mb-0.5">스트리머 닉네임</label>
+                                <input type="text" id="data-name" oninput="updatePreview()" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-400 mb-0.5">SOOP 채널 고유 ID</label>
+                                <input type="text" id="data-soop-id" oninput="updatePreview()" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 font-mono">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-400 mb-0.5">슬로건/한 줄 설명글</label>
+                            <input type="text" id="data-subtext" oninput="updatePreview()" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                        </div>
+
+                        <!-- SOOP 프로필 동기화 -->
+                        <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-800 space-y-2">
+                            <span class="block text-[11px] font-bold text-slate-200">SOOP 공식 프로필 연동</span>
+                            <button onclick="syncSoopProfile()" class="w-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 py-1.5 rounded text-xs font-semibold border border-emerald-500/30 transition">
+                                <i class="fa-solid fa-arrows-rotate mr-1"></i> 프로필 이미지 자동 추출
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] text-slate-400 mb-1">프로필 이미지 URL</label>
+                                <input type="text" id="data-avatar" oninput="updatePreview()" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[10px] text-slate-200 font-mono">
+                                <label class="block bg-slate-800 hover:bg-slate-700 text-slate-200 py-1 rounded text-[10px] font-semibold text-center cursor-pointer transition mt-1.5">
+                                    로컬 사진 등록
+                                    <input type="file" id="upload-avatar" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'data-avatar')">
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-400 mb-1">상단 배너 URL</label>
+                                <input type="text" id="data-banner" oninput="updatePreview()" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[10px] text-slate-200 font-mono">
+                                <label class="block bg-slate-800 hover:bg-slate-700 text-slate-200 py-1 rounded text-[10px] font-semibold text-center cursor-pointer transition mt-1.5">
+                                    로컬 배너 등록
+                                    <input type="file" id="upload-banner" accept="image/*" class="hidden" onchange="handleImageUpload(this, 'data-banner')">
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- SNS 및 소셜 링크 에디터 -->
+                        <div class="border-t border-slate-800/80 pt-4 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="block text-[11px] font-bold text-slate-200">소셜 & 커뮤니티 허브 목록</span>
+                                <button onclick="addSocialLink()" class="text-[9px] bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-2 py-0.5 rounded font-bold transition">+ 추가</button>
+                            </div>
+                            <div id="social-links-container" class="space-y-2"></div>
+                        </div>
+                    </div>
+
+                    <!-- 자기소개 에디터 -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-address-card"></i> 자기소개 (About Me)
+                        </h3>
+                        <textarea id="data-intro-text" oninput="updatePreview()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 font-sans h-24 focus:outline-none focus:border-emerald-500" placeholder="안녕하세요! 생방송 소통과 음악을 진행하는 스트리머입니다..."></textarea>
+                    </div>
+
+                    <!-- Like & Hate 에디터 -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-heart-crack"></i> Like & Hate 목록
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] text-slate-400 mb-1">좋아하는 것 (Like)</label>
+                                <input type="text" id="data-likes" oninput="updatePreview()" placeholder="음악, 커피, 소통" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-400 mb-1">싫어하는 것 (Hate)</label>
+                                <input type="text" id="data-hates" oninput="updatePreview()" placeholder="억까, 도배, 선넘기" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 기념일 & 디데이 에디터 -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-hourglass-half"></i> 기념일 & 디데이 (D-Day)
+                            </h3>
+                            <button onclick="addAnniversaryRow()" class="text-[10px] bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-2 py-1 rounded font-bold transition">행 추가</button>
+                        </div>
+                        <div id="anniversary-edit-container" class="space-y-2"></div>
+                    </div>
+
+                    <!-- 방송 정보 에디터 -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-info"></i> 스트리밍 방송 상세 정보
+                        </h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] text-slate-400 mb-1">플랫폼</label>
+                                <input type="text" id="data-broadcast-platform" oninput="updatePreview()" placeholder="SOOP" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-400 mb-1">정규 방송 시간</label>
+                                <input type="text" id="data-broadcast-time" oninput="updatePreview()" placeholder="매일 밤 8시" class="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-400 mb-1">방송국 대표 규칙</label>
+                            <textarea id="data-broadcast-rule" oninput="updatePreview()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 h-16 focus:outline-none" placeholder="상호 배려, 친목 금지..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 공지사항 에디터 -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-bullhorn"></i> 공지사항 (Announcements)
+                            </h3>
+                            <button onclick="addAnnouncementRow()" class="text-[10px] bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-2 py-1 rounded font-bold transition">공지 추가</button>
+                        </div>
+                        <div id="announcement-edit-container" class="space-y-3"></div>
+                    </div>
+
+                    <!-- 일일 일정표 수정 -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-calendar-days"></i> 요일별 방송 일정표 관리
+                        </h3>
+                        <div id="schedule-edit-container" class="space-y-2"></div>
+                    </div>
+
+                    <!-- 의상 & 헤어 도감 에디터 -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-shirt"></i> 의상 & 헤어 카탈로그
+                            </h3>
+                            <button onclick="addOutfitRow()" class="text-[10px] bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-2 py-1 rounded font-bold transition">행 추가</button>
+                        </div>
+                        <div id="outfit-edit-container" class="space-y-3"></div>
+                    </div>
+
+                    <!-- 시그니처 풍선 에디터 -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-star"></i> 시그니처 미션/리액션 (293*164 비율)
+                            </h3>
+                            <button onclick="addSigballoonRow()" class="text-[10px] bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-2 py-1 rounded font-bold transition">행 추가</button>
+                        </div>
+                        <div id="sigballoon-edit-container" class="space-y-3"></div>
+                    </div>
+
+                    <!-- 업보/숙제 에디터 (시청자 SOOP ID 연동 기능 반영) -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-fire"></i> 현재 업보 / 숙제 트래커 (스폰서 프로필 자동연동)
+                            </h3>
+                            <button onclick="addHomeworkRow()" class="text-[10px] bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-2 py-1 rounded font-bold transition">행 추가</button>
+                        </div>
+                        <p class="text-[10px] text-slate-500">"제안/스폰 시청자 ID"에 실제 SOOP 채널 아이디를 넣으면 프로필 아바타가 연동됩니다.</p>
+                        <div id="homework-edit-container" class="space-y-2"></div>
+                    </div>
+
+                    <!-- 노래책 관리 -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <i class="fa-solid fa-music"></i> 애창곡 노래책 관리
+                            </h3>
+                            <button onclick="addSongRow()" class="text-[10px] bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-2 py-1 rounded font-bold transition">행 추가</button>
+                        </div>
+                        <div id="songs-edit-container" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+                    </div>
+
+                    <!-- 운세뽑기 문구 에디터 -->
+                    <div class="bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-cookie"></i> 오늘의 궁합 운세뽑기 커스텀 문구
+                        </h3>
+                        <div>
+                            <textarea id="data-fortunes-textarea" oninput="syncCustomFortunes()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 font-sans h-32 focus:outline-none focus:border-emerald-500" placeholder="🍀|오늘 최고의 하루!"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 빌더 자체 푸터 영역 -->
+            <div class="p-4 border-t border-slate-800 bg-slate-950 text-center text-xs text-slate-500 font-semibold select-none">
+                made by. 연주아
+            </div>
+        </aside>
+
+        <!-- 우측 실시간 프리뷰 & 소스코드 탭 -->
+        <main class="flex-1 flex flex-col bg-slate-950 overflow-hidden relative">
+            <div class="bg-slate-900 border-b border-slate-800 px-6 py-3 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-4">
+                    <span class="text-xs font-semibold text-slate-400">👀 실시간 뷰어</span>
+                    <div class="bg-slate-950 rounded-lg p-0.5 flex border border-slate-800">
+                        <button onclick="setPreviewSize('mobile')" id="btn-preview-mobile" class="px-3 py-1 rounded text-xs font-medium bg-emerald-500 text-slate-950 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-mobile-screen-button"></i> 모바일 웹 기기
+                        </button>
+                        <button onclick="setPreviewSize('desktop')" id="btn-preview-desktop" class="px-3 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-laptop"></i> 데스크톱 브라우저
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-[11px] text-slate-400 font-medium font-mono">SOOP Platinum Realtime</span>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-auto p-6 flex justify-center items-start preview-pane">
+                <div id="preview-wrapper" class="w-full max-w-[390px] transition-all duration-300 ease-out bg-slate-950 rounded-[32px] shadow-2xl border-[8px] border-slate-950 overflow-hidden aspect-[9/19] h-[780px] max-h-full relative flex flex-col">
+                    <div id="preview-phone-bar" class="h-6 bg-slate-950 shrink-0 w-full flex justify-center items-center relative">
+                        <div class="w-20 h-4 bg-slate-950 rounded-b-xl absolute top-0"></div>
+                    </div>
+                    <iframe id="preview-iframe" class="w-full flex-1 bg-white border-none"></iframe>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 완성 코드 복사 팝업창 -->
+    <div id="code-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col border border-slate-800 shadow-2xl overflow-hidden">
+            <div class="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-code text-emerald-400 text-xl"></i>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-100">완성된 고화질 웹사이트 소스코드</h2>
+                        <p class="text-xs text-slate-400">아래 코드를 원클릭 복사하거나, 독립형 .html 파일로 다운로드하여 사용하세요.</p>
+                    </div>
+                </div>
+                <button onclick="closeCodeModal()" class="text-slate-400 hover:text-slate-200 p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <div class="p-6 flex-1 overflow-auto bg-slate-950">
+                <pre class="text-xs text-slate-300 font-mono p-4 bg-slate-900 rounded-xl overflow-x-auto border border-slate-800 select-all" id="code-output-area"></pre>
+            </div>
+            <div class="p-6 border-t border-slate-800 bg-slate-950 flex justify-between items-center shrink-0">
+                <button onclick="downloadHTMLFile()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-sm font-semibold transition flex items-center gap-1.5 border border-slate-700">
+                    <i class="fa-solid fa-file-arrow-down text-emerald-400"></i> 단독 HTML 파일로 다운로드
+                </button>
+                <div class="flex gap-2">
+                    <button onclick="closeCodeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-semibold transition">닫기</button>
+                    <button onclick="copyGeneratedCode()" class="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl text-sm font-bold transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
+                        <i class="fa-solid fa-copy"></i> 전체 소스코드 복사
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            toast.className = `px-5 py-3 rounded-xl shadow-lg text-sm font-semibold transition-all duration-300 transform translate-y-5 opacity-0 pointer-events-auto flex items-center gap-2 ${
+                type === 'success' ? 'bg-emerald-500 text-slate-950' : 'bg-rose-500 text-white'
+            }`;
+            const icon = type === 'success' ? '<i class="fa-solid fa-circle-check"></i>' : '<i class="fa-solid fa-circle-exclamation"></i>';
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-5', 'opacity-0'); }, 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-5', 'opacity-0');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 3000);
+        }
+
+        // 20종 프리미엄 테마 프리셋
+        const themePresets = [
+            { id: 'forest-soop', name: '🌲 정석 SOOP 숲', desc: '에메랄드 그린 리프 감성의 시그니처 테마', primary: '#10B981', secondary: '#059669', bgStyle: 'midnight', bgPattern: 'pattern-dots', font: 'font-sans', border: 'rounded-2xl border-2 border-transparent bg-gradient-to-tr from-emerald-500 to-teal-400 [background-clip:padding-box,border-box]', emoji: '🌲,💚,✨,🌱' },
+            { id: 'cherry-blossom', name: '🌸 벚꽃 엔딩', desc: '은은한 로맨틱 핑크의 벚꽃 축제 테마', primary: '#EC4899', secondary: '#F472B6', bgStyle: 'light', bgPattern: 'pattern-dots', font: 'font-cute', border: 'rounded-2xl border-4 border-dashed border-pink-400 shadow-premium', emoji: '🌸,🎀,💖,✨' },
+            { id: 'deep-midnight', name: '🌌 심해 미드나잇', desc: '웅장하고 신비롭게 반짝이는 코발트 블루', primary: '#3B82F6', secondary: '#1D4ED8', bgStyle: 'midnight', bgPattern: 'pattern-dots', font: 'font-neo', border: 'rounded-xl border border-white/20 backdrop-blur-md', emoji: '🐳,🫧,🌊,✨' },
+            { id: 'golden-luxury', name: '👑 리치 블랙골드', desc: '중후하고 고급스러운 프리미엄 스트리머 테마', primary: '#F59E0B', secondary: '#D97706', bgStyle: 'dark', bgPattern: 'pattern-grid', font: 'font-impact', border: 'rounded-none border-4 border-slate-950 shadow-neo', emoji: '👑,🪙,⭐,✨' },
+            { id: 'cotton-candy', name: '🍭 코튼 캔디', desc: '꿈결 같은 솜사탕 파스텔 그라데이션', primary: '#06B6D4', secondary: '#EC4899', bgStyle: 'cozy', bgPattern: 'pattern-clean', font: 'font-dongle', border: 'rounded-[2.5rem] border border-slate-300', emoji: '🍭,🍥,💖,☁️' },
+            { id: 'cozy-mocha', name: '☕ 가을 모카 카페', desc: '따스한 낙엽과 차 한잔의 따스함', primary: '#8B5A2B', secondary: '#A0522D', bgStyle: 'cozy', bgPattern: 'pattern-stripes', font: 'font-batang', border: 'rounded-lg border-2 border-amber-800 shadow-inner', emoji: '🍂,☕,🧸,🍁' },
+            { id: 'cyber-mint', name: '🧪 네온 사이버민트', desc: '청량하고 사이키델릭한 미래 게임 방송', primary: '#10B981', secondary: '#06B6D4', bgStyle: 'dark', bgPattern: 'pattern-grid', font: 'font-bagel', border: 'rounded-xl border-l-8 border-emerald-500 shadow-md', emoji: '🧪,👾,⚡,🧬' },
+            { id: 'clover-luck', name: '🍀 상큼 네잎클로버', desc: '푸른 행운을 가득 담은 힐링 테마', primary: '#34D399', secondary: '#059669', bgStyle: 'light', bgPattern: 'pattern-dots', font: 'font-cute', border: 'rounded-2xl shadow-premium', emoji: '🍀,✨,💚,🌱' },
+            { id: 'cute-duck', name: '🦆 노랑 둥둥오리', desc: '귀여운 러버덕 감성의 상큼함', primary: '#F59E0B', secondary: '#FBBF24', bgStyle: 'light', bgPattern: 'pattern-grid', font: 'font-cute', border: 'rounded-2xl border-4 border-dashed border-yellow-400 shadow-premium', emoji: '🦆,🐤,💛,⭐' },
+            { id: 'grape-soda', name: '🍇 포도 톡톡소다', desc: '달콤 상큼 버튜버 추천 탄산 테마', primary: '#8B5CF6', secondary: '#A78BFA', bgStyle: 'midnight', bgPattern: 'pattern-dots', font: 'font-sans', border: 'rounded-xl border border-white/20 backdrop-blur-md', emoji: '🍇,🔮,🪐,✨' },
+            { id: 'crimson-wine', name: '🍷 장미와인', desc: '장미빛 우아함과 깊고 성숙한 버건디', primary: '#DC2626', secondary: '#991B1B', bgStyle: 'dark', bgPattern: 'pattern-stripes', font: 'font-batang', border: 'rounded-3xl border-4 border-double border-red-900', emoji: '🌹,🍷,🥀,🖤' },
+            { id: 'lemon-lime', name: '🍋 상큼 레몬라임', desc: '비타민 톡톡 쏘는 레몬의 청량함', primary: '#EAB308', secondary: '#84CC16', bgStyle: 'light', bgPattern: 'pattern-dots', font: 'font-jua', border: 'rounded-2xl shadow-premium', emoji: '🍋,🍏,💚,⚡' },
+            { id: 'sweet-peach', name: '🍑 싱그럽 복숭아', desc: '피치 핑크의 포근한 과일나라 테마', primary: '#FB923C', secondary: '#F472B6', bgStyle: 'light', bgPattern: 'pattern-clean', font: 'font-dodum', border: 'rounded-[2.5rem] border border-slate-300', emoji: '🍑,🍥,🌸,✨' },
+            { id: 'lavender-dream', name: '🪻 라벤더 드림', desc: '은은한 연보라 무드의 몽환적인 감성', primary: '#A78BFA', secondary: '#C084FC', bgStyle: 'cozy', bgPattern: 'pattern-dots', font: 'font-dodum', border: 'rounded-xl border border-white/20 backdrop-blur-md', emoji: '🪻,🔮,🧸,✨' },
+            { id: 'retro-8bit', name: '👾 픽셀 레트로 게임', desc: '고전 8비트 키치 및 사이버 감성', primary: '#06B6D4', secondary: '#F43F5E', bgStyle: 'dark', bgPattern: 'pattern-grid', font: 'font-impact', border: 'rounded-none border-4 border-slate-950 shadow-neo', emoji: '👾,🎮,⚡,🕹️' },
+            { id: 'minimal-clean', name: '🤍 미니멀 클린 화이트', desc: '여백의 미와 아주 정갈한 클래식 라인', primary: '#64748B', secondary: '#94A3B8', bgStyle: 'light', bgPattern: 'pattern-clean', font: 'font-sans', border: 'rounded-md border border-slate-200', emoji: '🤍,✉️,🕊️,✨' },
+            { id: 'cyberpunk-neon', name: '⚡ 네온 사이버펑크', desc: '화려한 사이안과 네온 핑크의 우주 테마', primary: '#06B6D4', secondary: '#EC4899', bgStyle: 'midnight', bgPattern: 'pattern-grid', font: 'font-orbit', border: 'rounded-3xl border-4 border-slate-950 shadow-neo', emoji: '⚡,🛸,👾,🛰️' },
+            { id: 'matcha-greentea', name: '🍵 진한 말차 브루잉', desc: '쌉싸름하고 평화로운 치유계 말차 테마', primary: '#4D6B52', secondary: '#739574', bgStyle: 'cozy', bgPattern: 'pattern-dots', font: 'font-yeonsung', border: 'rounded-2xl border-2 border-dashed border-slate-400 dark:border-slate-600', emoji: '🍵,🍃,🍪,🍂' },
+            { id: 'soda-ocean', name: '🌊 시원 소다 바다', desc: '가슴이 뻥 뚫리는 시원한 파도와 탄산 바다', primary: '#2563EB', secondary: '#60A5FA', bgStyle: 'pastel-blue', bgPattern: 'pattern-stripes', font: 'font-dohyeon', border: 'rounded-xl border border-white/20 backdrop-blur-md', emoji: '🐳,🌊,🫧,🍦' },
+            { id: 'strawberry-latte', name: '🍓 딸기 크림 라떼', desc: '생딸기 크림 레시피의 포근포근 힐링 무드', primary: '#F43F5E', secondary: '#FDA4AF', bgStyle: 'pastel-pink', bgPattern: 'pattern-clean', font: 'font-singleday', border: 'rounded-[2.5rem] border-4 border-double border-pink-300 shadow-premium', emoji: '🍓,🍼,🍰,🎀' }
+        ];
+
+        // 총 12종 완벽한 모듈 레이아웃 구성
+        const modulesData = [
+            { id: 'profile', name: '스트리머 기본 정보 카드', required: true, title: 'STREAMER PROFILE', desc: '배너, 닉네임, 아바타, SNS 소셜 허브 링크', checked: true },
+            { id: 'intro', name: '자기소개 카드 (About Me)', required: false, title: 'ABOUT ME', desc: '스트리머 및 채널에 대한 진정성 있는 소개 단락', checked: true },
+            { id: 'likehate', name: 'Like & Hate 목록', required: false, title: 'LIKE & HATE', desc: '스트리머가 선호하는 것과 기피하는 키워드 보드', checked: true },
+            { id: 'anniversary', name: '기념일 & 디데이 (D-Day)', required: false, title: 'ANNIVERSARY', desc: '방송 시작일 및 중요 마일스톤 D-Day 카운트 정보', checked: true },
+            { id: 'broadcast', name: '방송 및 플랫폼 안내', required: false, title: 'BROADCAST INFO', desc: '정규 시간대 및 방송국 전용 규칙 공지', checked: true },
+            { id: 'announcement', name: '생방송 리얼타임 공지사항', required: false, title: 'ANNOUNCEMENT', desc: '휴방 일정이나 중요 소식을 알리는 고정판', checked: true },
+            { id: 'schedule', name: '주간 방송 일정표 (Weekly Schedule)', required: false, title: 'WEEKLY SCHEDULE', desc: '요일별 개별 컬러링 배경이 탑재된 한 주 일정표', checked: true },
+            { id: 'outfits', name: '의상 & 헤어 도감 (방셀 캐러셀)', required: false, title: 'OUTFIT SHOWROOM', desc: '가로 드래그 스냅으로 넘기는 세로형 3:4 갤러리', checked: true },
+            { id: 'sigballoon', name: '시그니처 미션 보드 (시그풍 캐러셀)', required: false, title: 'SIGNATURE MISSIONS', desc: '정밀 293x164 가로 황금비율 리액션 가이드', checked: true },
+            { id: 'homework', name: '업보 / 미션 트래커 (아바타 연동)', required: false, title: 'UPPO & MISSIONS', desc: '스폰서 시청자 ID를 입력하면 프로필 로고가 자동 연동', checked: true },
+            { id: 'songbook', name: '노래책 리스트 (상시 신청 가능)', required: false, title: 'PREMIUM JUKEBOX', desc: '테마 색상에 즉각 반응하며 신청 및 장르 필터링 지원', checked: true },
+            { id: 'fortune', name: '커스텀 케미 궁합 운세뽑기', required: false, title: 'TODAY\'S FORTUNE', desc: '포춘쿠키를 깨서 케미 점수와 실시간 운세를 보는 장치', checked: true }
+        ];
+
+        // 초기 예시 데이터베이스 설계
+        const demoData = {
+            streamer: {
+                name: '도페',
+                subtext: '🎧 매일 저녁 8시 생방송! 도페와 함께 듣는 주크박스 🎧',
+                soopId: 'dope_music',
+                avatar: 'https://placehold.co/300x300/e2e8f0/0f172a?text=DOPE',
+                banner: 'https://placehold.co/800x350/1e1b4b/fda4af?text=DOPE+JUKEBOX+SPACE',
+            },
+            socials: [
+                { id: 'link-1', label: '유튜브', url: 'https://youtube.com', icon: 'fa-brands fa-youtube', emoji: '📺', color: '#EF4444' },
+                { id: 'link-2', label: '팬카페', url: 'https://cafe.naver.com', icon: 'fa-solid fa-mug-saucer', emoji: '☕', color: '#10B981' },
+                { id: 'link-3', label: '디스코드', url: 'https://discord.com', icon: 'fa-brands fa-discord', emoji: '👾', color: '#5865F2' }
+            ],
+            introText: "안녕하세요! 생방송 소통과 R&B/힙합 음악을 주력으로 다루는 주크박스 스트리머 '도페'입니다. 언제나 편히 들러 귀와 마음을 따스히 녹일 수 있는 휴식처를 약속드려요! 🎧💚",
+            likeHate: {
+                likes: "커피, 힙합 비트, 시청자 소통 낙수, 야간 드라이브",
+                hates: "선넘는 억까, 방송 스포일러, 밤샘 무지성 매운음식 먹기"
+            },
+            anniversaries: [
+                { id: 'ann-1', name: 'SOOP 생방송 첫 시작일', date: '2024-03-15' },
+                { id: 'ann-2', name: 'SOOP 파트너 비제이 체결', date: '2025-06-01' }
+            ],
+            broadcast: {
+                platform: 'SOOP (아프리카TV 공식 채널)',
+                time: '매일 저녁 8시 ~ 새벽 1시 (목요일 정기 휴방)',
+                rule: '1. 과도한 친목 질서 저해 행동 금지\n2. 타 스트리머 간섭 및 타스 험담 절대 불가\n3. 상호 존중과 예의를 지키는 행복한 소통'
+            },
+            announcements: [
+                { id: 'anc-1', title: '⚠️ 이번 주 휴방 일정 조정 공지', content: '목요일 정기휴방 대신 시상식 참석 관계로 이번 주 수요일 하루 쉬어갑니다!', date: '2026-07-20' },
+                { id: 'anc-2', title: '🎤 주간 스페셜 게스트 합방 안내', content: '일요일 저녁 9시 스페셜 가창 릴레이 콘텐츠에 꼭 놀러오세요!', date: '2026-07-19' }
+            ],
+            schedule: [
+                { day: '월요일', time: '오후 8시', content: '💬 수다 및 주간 신청 음악 톡투유', tag: '소통', color: '#3B82F6' },
+                { day: '화요일', time: '오후 8시', content: '🎧 명곡 무제한 발굴 힙합 주크박스', tag: '노래', color: '#10B981' },
+                { day: '수요일', time: '오후 8시', content: '🔥 R&B 신곡 완창 스피드 챌린지', tag: '콘텐츠', color: '#8B5CF6' },
+                { day: '목요일', time: '휴방', content: '💤 정기 휴식 일정 (콘텐츠 기획 개발)', tag: '휴방', color: '#EF4444' },
+                { day: '금요일', time: '오후 8시', content: '🎤 시청자 라이브 소통 오디션방', tag: '참여형', color: '#EC4899' },
+                { day: '토요일', time: '오후 8시', content: '🎮 스팀 종합 힐링 게임 & 토크쇼', tag: '종게임', color: '#F59E0B' },
+                { day: '일요일', time: '오후 8시', content: '🍀 시그니처 미션 대작전 및 벌칙 수행', tag: '게임', color: '#EF4444' }
+            ],
+            outfits: [
+                { title: '가을 시크 모카 자켓', desc: '차분하고 정갈하게 정돈된 오버핏 자켓과 어반 머플러 조화', img: 'https://placehold.co/300x400/e2f0d9/385723?text=Outfit+1' },
+                { title: '스포티 캐주얼 후드셋', desc: '편하고 캐주얼하여 장시간 힐링 소통에 제격인 후드 티셔츠', img: 'https://placehold.co/300x400/d9e1f2/1f4e79?text=Outfit+2' },
+                { title: '프레시 테니스 스쿨룩', desc: '활동적이고 맑은 스카이블루 배색이 강조된 프레피 유니폼', img: 'https://placehold.co/300x400/fff2cc/7f6000?text=Outfit+3' }
+            ],
+            sigballoons: [
+                { count: '109개', name: '도페 초감각 3단계 애교 챌린지', img: 'https://placehold.co/293x164/fff2cc/7f6000?text=Reaction_1' },
+                { count: '333개', name: '시그니처 드롭스 하이퍼 랩핑', img: 'https://placehold.co/293x164/fce4d6/c65911?text=Reaction_2' },
+                { count: '555개', name: '감미로운 수면 유도 10분 밀착 라디오', img: 'https://placehold.co/293x164/d9e1f2/1f4e79?text=Reaction_3' }
+            ],
+            homework: [
+                { title: '매운 실비 짬뽕 완뽕 도전 벌칙', reward: '방종송 댄스 1회 면제', progress: 30, status: '진행중', viewerId: 'bj_chul' },
+                { title: '12시간 무제한 릴레이 주크박스 수면 방송', reward: '미션 성공 별풍선 낙수', progress: 100, status: '완료', viewerId: 'soop_manager' }
+            ],
+            songs: [
+                { title: 'Say my name', singer: 'DIMO REX', tag: '힙합/R&B', mastery: 5 },
+                { title: 'Slide', singer: 'DIMO REX', tag: '힙합/R&B', mastery: 5 },
+                { title: '매초마다 죽어가고 있어', singer: '용용', tag: '힙합/R&B', mastery: 4 },
+                { title: '나는 그를 사랑했다', singer: '요아소비', tag: 'J-Pop/애니', mastery: 5 },
+                { title: '첫 만남은 계획대로 되지 않아', singer: 'TWS', tag: '귀여운 곡', mastery: 3 }
+            ],
+            fortunes: [
+                { emoji: '🍀', text: '오늘 당신과 스트리머의 운명의 소통 궁합 지수는 100% 대박!' },
+                { emoji: '⭐', text: '시그니처 리액션 후원 기운이 감도는 짜릿하고 활기찬 방송각입니다!' },
+                { emoji: '💖', text: '스트리머가 당신의 닉네임을 유난히 사랑스럽게 불러주는 최고의 하루!' }
+            ]
+        };
+
+        let currentTab = 'design';
+        let currentTheme = 'forest-soop';
+        let customTheme = {
+            primary: '#10B981',
+            secondary: '#059669',
+            bgStyle: 'midnight',
+            bgPattern: 'pattern-dots',
+            font: 'font-sans',
+            border: 'rounded-2xl border-2 border-transparent bg-gradient-to-tr from-emerald-500 to-teal-400 [background-clip:padding-box,border-box]',
+            animFloat: true,
+            emojis: '🍀,✨,💚,🌱',
+            animDir: 'float-up',
+            animSpeed: 'normal'
+        };
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+            ['design', 'modules', 'data'].forEach(id => {
+                const btn = document.getElementById(`tab-btn-${id}`);
+                const content = document.getElementById(`tab-content-${id}`);
+                if (id === tabId) {
+                    btn.className = "flex-1 py-3 text-sm font-bold border-b-2 border-emerald-400 text-emerald-400 transition flex items-center justify-center gap-2";
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = "flex-1 py-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-2";
+                    content.classList.add('hidden');
+                }
+            });
+        }
+
+        function updateFontSizeLabel(val) {
+            const label = document.getElementById('cfg-font-size-label');
+            if (!label) return;
+            let txt = '보통 (16px)';
+            if (val == 12) txt = '아주 작게 (12px)';
+            else if (val == 14) txt = '작게 (14px)';
+            else if (val == 16) txt = '보통 (16px)';
+            else if (val == 18) txt = '크게 (18px)';
+            else if (val == 20) txt = '더 크게 (20px)';
+            else if (val == 22) txt = '아주 크게 (22px)';
+            label.innerText = txt;
+        }
+
+        function selectThemePreset(presetId) {
+            currentTheme = presetId;
+            const theme = themePresets.find(t => t.id === presetId);
+            if (theme) {
+                customTheme.primary = theme.primary;
+                customTheme.secondary = theme.secondary;
+                customTheme.bgStyle = theme.bgStyle;
+                customTheme.bgPattern = theme.bgPattern;
+                customTheme.font = theme.font;
+                customTheme.border = theme.border;
+                customTheme.emojis = theme.emoji;
+
+                document.getElementById('cfg-color-primary').value = theme.primary;
+                document.getElementById('cfg-color-primary-text').value = theme.primary.toUpperCase();
+                document.getElementById('cfg-color-secondary').value = theme.secondary;
+                document.getElementById('cfg-color-secondary-text').value = theme.secondary.toUpperCase();
+                document.getElementById('cfg-font').value = theme.font;
+                document.getElementById('cfg-bg-style').value = theme.bgStyle;
+                document.getElementById('cfg-border-style').value = theme.border;
+                document.getElementById('cfg-bg-pattern').value = theme.bgPattern;
+                document.getElementById('cfg-anim-emojis').value = theme.emoji;
+
+                renderPresetsGrid();
+                updatePreview();
+            }
+        }
+
+        function syncColorInput(type) {
+            const txt = document.getElementById(`cfg-color-${type}-text`).value;
+            if (/^#[0-9A-F]{6}$/i.test(txt)) {
+                document.getElementById(`cfg-color-${type}`).value = txt;
+                customTheme[type] = txt;
+                updatePreview();
+            }
+        }
+
+        function setPreviewSize(device) {
+            const wrapper = document.getElementById('preview-wrapper');
+            const btnMobile = document.getElementById('btn-preview-mobile');
+            const btnDesktop = document.getElementById('btn-preview-desktop');
+            const phoneBar = document.getElementById('preview-phone-bar');
+
+            if (device === 'mobile') {
+                wrapper.className = "w-full max-w-[390px] transition-all duration-300 ease-out bg-slate-950 rounded-[32px] shadow-2xl border-[8px] border-slate-950 overflow-hidden aspect-[9/19] h-[780px] max-h-full relative flex flex-col";
+                phoneBar.classList.remove('hidden');
+                btnMobile.className = "px-3 py-1 rounded text-xs font-medium bg-emerald-500 text-slate-950 transition flex items-center gap-1.5";
+                btnDesktop.className = "px-3 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5";
+            } else {
+                wrapper.className = "w-full max-w-full transition-all duration-300 ease-out bg-slate-950 rounded-xl shadow-2xl border-4 border-slate-950 overflow-hidden h-full max-h-full relative flex flex-col";
+                phoneBar.classList.add('hidden');
+                btnDesktop.className = "px-3 py-1 rounded text-xs font-medium bg-emerald-500 text-slate-950 transition flex items-center gap-1.5";
+                btnMobile.className = "px-3 py-1 rounded text-xs font-medium text-slate-400 hover:text-slate-200 transition flex items-center gap-1.5";
+            }
+        }
+
+        function renderPresetsGrid() {
+            const grid = document.getElementById('theme-presets-grid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            themePresets.forEach(theme => {
+                const isSelected = currentTheme === theme.id;
+                const borderClass = isSelected ? 'border-emerald-400 ring-2 ring-emerald-500/20' : 'border-slate-800 hover:border-slate-700';
+                const card = document.createElement('div');
+                card.className = `bg-slate-950 border p-3 rounded-xl cursor-pointer transition ${borderClass}`;
+                card.onclick = () => selectThemePreset(theme.id);
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-slate-200">${theme.name}</span>
+                        <span class="text-xs text-slate-400 font-mono">${theme.emoji.split(',')[0]}</span>
+                    </div>
+                    <p class="text-[10px] text-slate-500 leading-normal mb-1.5">${theme.desc}</p>
+                    <div class="flex gap-1.5 mt-2.5">
+                        <span class="w-3.5 h-3.5 rounded-full inline-block" style="background-color: ${theme.primary}"></span>
+                        <span class="w-3.5 h-3.5 rounded-full inline-block" style="background-color: ${theme.secondary}"></span>
+                        <span class="text-[9px] text-slate-400">${theme.bgStyle}</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderModulesSelector() {
+            const container = document.getElementById('modules-list');
+            if(!container) return;
+            container.innerHTML = '';
+            modulesData.forEach(mod => {
+                const checkAttr = mod.checked ? 'checked' : '';
+                const reqBadge = mod.required ? '<span class="text-[9px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-bold shrink-0">필수</span>' : '';
+                const disabledAttr = mod.required ? 'disabled' : '';
+
+                const item = document.createElement('div');
+                item.className = "flex flex-col p-3.5 bg-slate-950 rounded-xl border border-slate-800 space-y-3";
+                item.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="pr-4">
+                            <div class="flex items-center gap-1.5 mb-0.5">
+                                <span class="text-xs font-bold text-slate-200">${mod.name}</span>
+                                ${reqBadge}
+                            </div>
+                            <span class="block text-[10px] text-slate-500 leading-normal">${mod.desc}</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" id="mod-toggle-${mod.id}" onchange="toggleModule('${mod.id}', this.checked)" ${checkAttr} ${disabledAttr} class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-5 after:width-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+                    <div class="pt-2 border-t border-slate-900/60 flex items-center gap-3">
+                        <span class="text-[10px] text-slate-400 shrink-0 font-semibold">노출될 타이틀명:</span>
+                        <input type="text" value="${mod.title}" oninput="updateModuleTitle('${mod.id}', this.value)" class="flex-1 bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-bold focus:border-emerald-500 focus:outline-none">
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function toggleModule(modId, checked) {
+            const mod = modulesData.find(m => m.id === modId);
+            if (mod) {
+                mod.checked = checked;
+                updatePreview();
+            }
+        }
+
+        function updateModuleTitle(modId, val) {
+            const mod = modulesData.find(m => m.id === modId);
+            if (mod) {
+                mod.title = val || mod.name;
+                updatePreview();
+            }
+        }
+
+        function syncSoopProfile() {
+            const soopId = document.getElementById('data-soop-id').value.trim();
+            if (!soopId) {
+                showToast("⚠️ SOOP 고유 ID를 기입해 주세요.", "error");
+                return;
+            }
+            const firstTwo = soopId.slice(0, 2).toLowerCase();
+            const automaticUrl = `https://profile.img.afreecatv.com/LOGO/${firstTwo}/${soopId}/${soopId}.jpg`;
+            document.getElementById('data-avatar').value = automaticUrl;
+            demoData.streamer.avatar = automaticUrl;
+            updatePreview();
+            showToast("🌲 SOOP 프로필 이미지 링크 동기화 성공!");
+        }
+
+        function handleImageUpload(inputElement, targetFieldId) {
+            const file = inputElement.files[0];
+            if (!file) return;
+            if (file.size > 3.5 * 1024 * 1024) {
+                showToast("⚠️ 이미지는 최대 3.5MB까지만 지원됩니다.", "error");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Data = e.target.result;
+                document.getElementById(targetFieldId).value = base64Data;
+                if (targetFieldId === 'data-avatar') {
+                    demoData.streamer.avatar = base64Data;
+                } else if (targetFieldId === 'data-banner') {
+                    demoData.streamer.banner = base64Data;
+                }
+                updatePreview();
+                showToast("📷 사진 등록 완료!");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function addSocialLink() {
+            const id = 'link-' + Date.now();
+            demoData.socials.push({ id: id, label: '새 링크', url: 'https://', icon: 'fa-solid fa-link', emoji: '🔗', color: '#64748B' });
+            renderSocialLinksEditor();
+            updatePreview();
+        }
+        function deleteSocialLink(idx) {
+            demoData.socials.splice(idx, 1);
+            renderSocialLinksEditor();
+            updatePreview();
+        }
+        function renderSocialLinksEditor() {
+            const container = document.getElementById('social-links-container');
+            if(!container) return;
+            container.innerHTML = '';
+            const availableIcons = [
+                { class: 'fa-brands fa-youtube', name: '유튜브' },
+                { class: 'fa-solid fa-mug-saucer', name: '네이버카페' },
+                { class: 'fa-brands fa-discord', name: '디스코드' },
+                { class: 'fa-brands fa-instagram', name: '인스타' },
+                { class: 'fa-brands fa-x-twitter', name: '트위터' },
+                { class: 'fa-solid fa-link', name: '일반링크' }
+            ];
+            demoData.socials.forEach((link, idx) => {
+                const div = document.createElement('div');
+                div.className = "bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-2 relative";
+                let iconOptions = availableIcons.map(icon => `<option value="${icon.class}" ${link.icon === icon.class ? 'selected' : ''}>${icon.name}</option>`).join('');
+                div.innerHTML = `
+                    <button onclick="deleteSocialLink(${idx})" class="absolute top-2 right-2 text-slate-500 hover:text-rose-400"><i class="fa-solid fa-trash text-xs"></i></button>
+                    <div class="grid grid-cols-3 gap-2 pr-6">
+                        <input type="text" value="${link.label}" oninput="demoData.socials[${idx}].label=this.value; updatePreview()" placeholder="링크 이름" class="bg-slate-950 border border-slate-800 text-[10px] px-2 py-1 rounded text-slate-200">
+                        <input type="text" value="${link.emoji || ''}" oninput="demoData.socials[${idx}].emoji=this.value; updatePreview()" placeholder="이모지" class="bg-slate-950 border border-slate-800 text-[10px] px-2 py-1 rounded text-slate-200 text-center">
+                        <select onchange="demoData.socials[${idx}].icon=this.value; updatePreview()" class="bg-slate-950 border border-slate-800 text-[10px] px-2 py-1 rounded text-slate-200">${iconOptions}</select>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 col-span-3">
+                        <input type="text" value="${link.url}" oninput="demoData.socials[${idx}].url=this.value; updatePreview()" class="col-span-2 bg-slate-950 border border-slate-800 text-[9px] px-2 py-1 rounded text-slate-200 font-mono">
+                        <input type="color" value="${link.color}" onchange="demoData.socials[${idx}].color=this.value; updatePreview()" class="w-full h-6 rounded cursor-pointer">
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addAnniversaryRow() {
+            demoData.anniversaries.push({ id: 'ann-' + Date.now(), name: '신규 기념일', date: '2026-01-01' });
+            renderAnniversaryEditor();
+            updatePreview();
+        }
+        function deleteAnniversaryRow(idx) {
+            demoData.anniversaries.splice(idx, 1);
+            renderAnniversaryEditor();
+            updatePreview();
+        }
+        function renderAnniversaryEditor() {
+            const container = document.getElementById('anniversary-edit-container');
+            if(!container) return;
+            container.innerHTML = '';
+            demoData.anniversaries.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = "flex gap-2 items-center bg-slate-900 p-2.5 rounded-lg border border-slate-800 relative pr-8";
+                div.innerHTML = `
+                    <input type="text" value="${item.name}" oninput="demoData.anniversaries[${idx}].name=this.value; updatePreview()" placeholder="기념일 명칭" class="flex-1 bg-slate-950 border border-slate-800 text-xs px-2.5 py-1 rounded text-slate-200">
+                    <input type="date" value="${item.date}" oninput="demoData.anniversaries[${idx}].date=this.value; updatePreview()" class="w-32 bg-slate-950 border border-slate-800 text-xs px-2 py-1 rounded text-slate-200">
+                    <button onclick="deleteAnniversaryRow(${idx})" class="absolute right-2 text-slate-500 hover:text-rose-400"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addAnnouncementRow() {
+            demoData.announcements.push({ id: 'anc-' + Date.now(), title: '신규 공지', content: '공지 본문 내용', date: '2026-07-20' });
+            renderAnnouncementEditor();
+            updatePreview();
+        }
+        function deleteAnnouncementRow(idx) {
+            demoData.announcements.splice(idx, 1);
+            renderAnnouncementEditor();
+            updatePreview();
+        }
+        function renderAnnouncementEditor() {
+            const container = document.getElementById('announcement-edit-container');
+            if(!container) return;
+            container.innerHTML = '';
+            demoData.announcements.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = "bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-2 relative";
+                div.innerHTML = `
+                    <button onclick="deleteAnnouncementRow(${idx})" class="absolute top-2 right-2 text-slate-500 hover:text-rose-400"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    <div class="grid grid-cols-3 gap-2 pr-6">
+                        <input type="text" value="${item.title}" oninput="demoData.announcements[${idx}].title=this.value; updatePreview()" placeholder="공지 제목" class="col-span-2 bg-slate-950 border border-slate-800 text-[10px] px-2 py-1 rounded text-slate-200">
+                        <input type="date" value="${item.date}" oninput="demoData.announcements[${idx}].date=this.value; updatePreview()" class="bg-slate-950 border border-slate-800 text-[10px] px-2 py-1 rounded text-slate-200">
+                    </div>
+                    <textarea oninput="demoData.announcements[${idx}].content=this.value; updatePreview()" class="w-full bg-slate-950 border border-slate-800 rounded p-2 text-xs text-slate-200 h-16 focus:outline-none" placeholder="내용을 작성하세요...">${item.content}</textarea>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function renderScheduleEditor() {
+            const container = document.getElementById('schedule-edit-container');
+            if(!container) return;
+            container.innerHTML = '';
+            demoData.schedule.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = "flex flex-col gap-2 bg-slate-950 p-3 rounded-lg border border-slate-800";
+                div.innerHTML = `
+                    <div class="flex gap-2 items-center">
+                        <span class="text-[10px] text-slate-400 w-12 font-bold shrink-0">${item.day}</span>
+                        <input type="text" value="${item.time}" oninput="demoData.schedule[${idx}].time=this.value; updatePreview()" class="w-20 bg-slate-900 border border-slate-850 text-[10px] px-2 py-1 rounded text-slate-200">
+                        <input type="text" value="${item.content}" oninput="demoData.schedule[${idx}].content=this.value; updatePreview()" class="flex-1 bg-slate-900 border border-slate-850 text-[10px] px-2 py-1 rounded text-slate-200">
+                    </div>
+                    <div class="flex items-center justify-between pt-1 border-t border-slate-900">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-[10px] text-slate-500">배경색:</span>
+                            <input type="color" value="${item.color || '#10B981'}" onchange="demoData.schedule[${idx}].color=this.value; updatePreview()" class="w-7 h-5 rounded cursor-pointer bg-slate-900 border border-slate-800">
+                        </div>
+                        <input type="text" value="${item.tag || ''}" oninput="demoData.schedule[${idx}].tag=this.value; updatePreview()" placeholder="태그" class="w-16 bg-slate-900 border border-slate-850 text-[10px] px-1 py-0.5 rounded text-slate-200 text-center">
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addOutfitRow() {
+            demoData.outfits.push({ title: '새로운 코디', desc: '특징을 가볍게 적어주세요.', img: 'https://placehold.co/300x400/e2f0d9/385723?text=Outfit' });
+            renderOutfitEditor();
+            updatePreview();
+        }
+        function deleteOutfitRow(idx) {
+            demoData.outfits.splice(idx, 1);
+            renderOutfitEditor();
+            updatePreview();
+        }
+        function renderOutfitEditor() {
+            const container = document.getElementById('outfit-edit-container');
+            if(!container) return;
+            container.innerHTML = '';
+            demoData.outfits.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = "flex flex-col gap-2 bg-slate-950 p-3 rounded-lg border border-slate-800 relative";
+                div.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-slate-400">#${idx + 1} 세로형 의상</span>
+                        <button onclick="deleteOutfitRow(${idx})" class="text-slate-500 hover:text-rose-400"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" value="${item.title}" oninput="demoData.outfits[${idx}].title=this.value; updatePreview()" class="bg-slate-900 border border-slate-800 text-[10px] px-2 py-1.5 rounded text-slate-200">
+                        <input type="text" value="${item.desc}" oninput="demoData.outfits[${idx}].desc=this.value; updatePreview()" class="bg-slate-900 border border-slate-800 text-[10px] px-2 py-1.5 rounded text-slate-200">
+                    </div>
+                    <input type="text" value="${item.img}" oninput="demoData.outfits[${idx}].img=this.value; updatePreview()" placeholder="이미지 주소 URL" class="w-full bg-slate-900 border border-slate-800 text-[9px] px-2 py-1 rounded text-slate-400">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addSigballoonRow() {
+            demoData.sigballoons.push({ count: '100개', name: '새 리액션 미션', img: 'https://placehold.co/293x164/fff2cc/7f6000?text=Signature' });
+            renderSigballoonEditor();
+            updatePreview();
+        }
+        function deleteSigballoonRow(idx) {
+            demoData.sigballoons.splice(idx, 1);
+            renderSigballoonEditor();
+            updatePreview();
+        }
+        function renderSigballoonEditor() {
+            const container = document.getElementById('sigballoon-edit-container');
+            if(!container) return;
+            container.innerHTML = '';
+            demoData.sigballoons.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = "flex flex-col gap-2 bg-slate-950 p-3 rounded-lg border border-slate-800 relative";
+                div.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-bold text-slate-400">#${idx + 1} 가로형 시그풍 (293x164)</span>
+                        <button onclick="deleteSigballoonRow(${idx})" class="text-slate-500 hover:text-rose-400"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" value="${item.count}" oninput="demoData.sigballoons[${idx}].count=this.value; updatePreview()" class="bg-slate-900 border border-slate-800 text-[10px] px-2 py-1.5 rounded text-slate-200">
+                        <input type="text" value="${item.name}" oninput="demoData.sigballoons[${idx}].name=this.value; updatePreview()" class="bg-slate-900 border border-slate-800 text-[10px] px-2 py-1.5 rounded text-slate-200">
+                    </div>
+                    <input type="text" value="${item.img}" oninput="demoData.sigballoons[${idx}].img=this.value; updatePreview()" placeholder="이미지 주소 URL" class="w-full bg-slate-900 border border-slate-800 text-[9px] px-2 py-1 rounded text-slate-400">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addHomeworkRow() {
+            demoData.homework.push({ title: '신규 숙제', reward: '조건', progress: 0, status: '대기', viewerId: '' });
+            renderHomeworkEditor();
+            updatePreview();
+        }
+        function deleteHomeworkRow(idx) {
+            demoData.homework.splice(idx, 1);
+            renderHomeworkEditor();
+            updatePreview();
+        }
+        function renderHomeworkEditor() {
+            const container = document.getElementById('homework-edit-container');
+            if(!container) return;
+            container.innerHTML = '';
+            demoData.homework.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = "flex flex-col gap-2 bg-slate-900 p-3 rounded-lg border border-slate-800 relative";
+                div.innerHTML = `
+                    <button onclick="deleteHomeworkRow(${idx})" class="absolute top-2 right-2 text-slate-500 hover:text-rose-400"><i class="fa-solid fa-trash-can text-[10px]"></i></button>
+                    <div class="grid grid-cols-2 gap-2 pr-6">
+                        <input type="text" value="${item.title}" oninput="demoData.homework[${idx}].title=this.value; updatePreview()" placeholder="업보/벌칙 명칭" class="bg-slate-950 border border-slate-800 text-[10px] px-2 py-1 rounded text-slate-200">
+                        <input type="text" value="${item.reward}" oninput="demoData.homework[${idx}].reward=this.value; updatePreview()" placeholder="보상 / 미션 조건" class="bg-slate-950 border border-slate-800 text-[10px] px-2 py-1 rounded text-slate-200">
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="flex items-center gap-1 bg-slate-950 border border-slate-800 px-1.5 py-0.5 rounded">
+                            <span class="text-[9px] text-slate-400 shrink-0">스폰서 ID:</span>
+                            <input type="text" value="${item.viewerId || ''}" oninput="demoData.homework[${idx}].viewerId=this.value.trim(); updatePreview()" placeholder="soop_id" class="w-full bg-transparent text-[9px] text-slate-200 font-mono focus:outline-none">
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <input type="range" min="0" max="100" step="10" value="${item.progress}" oninput="demoData.homework[${idx}].progress=parseInt(this.value); updatePreview()" class="w-full accent-emerald-500">
+                        </div>
+                        <select onchange="demoData.homework[${idx}].status=this.value; updatePreview()" class="bg-slate-950 border border-slate-800 text-[10px] px-1 py-1 rounded text-slate-200">
+                            <option value="대기" ${item.status === '대기' ? 'selected' : ''}>대기중</option>
+                            <option value="진행중" ${item.status === '진행중' ? 'selected' : ''}>진행중</option>
+                            <option value="완료" ${item.status === '완료' ? 'selected' : ''}>성공/완료</option>
+                        </select>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function addSongRow() {
+            demoData.songs.push({ title: '새 신청곡', singer: '아티스트', tag: '기타', mastery: 5 });
+            renderSongsEditor();
+            updatePreview();
+        }
+        function deleteSongRow(idx) {
+            demoData.songs.splice(idx, 1);
+            renderSongsEditor();
+            updatePreview();
+        }
+        function renderSongsEditor() {
+            const container = document.getElementById('songs-edit-container');
+            if(!container) return;
+            container.innerHTML = '';
+            demoData.songs.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = "flex gap-2 items-center bg-slate-950 p-2 rounded-lg border border-slate-800 mb-1.5";
+                div.innerHTML = `
+                    <input type="text" value="${item.title}" oninput="demoData.songs[${idx}].title=this.value; updatePreview()" placeholder="곡 제목" class="flex-1 bg-slate-900 border border-slate-800 text-[10px] px-2 py-1 rounded text-slate-200">
+                    <input type="text" value="${item.singer}" oninput="demoData.songs[${idx}].singer=this.value; updatePreview()" placeholder="아티스트" class="w-20 bg-slate-900 border border-slate-800 text-[10px] px-2 py-1 rounded text-slate-200">
+                    <select onchange="demoData.songs[${idx}].mastery=parseInt(this.value); updatePreview()" class="w-20 bg-slate-900 border border-slate-800 text-[10px] px-1 py-1 rounded text-slate-200">
+                        <option value="5" ${item.mastery === 5 ? 'selected' : ''}>⭐⭐⭐⭐⭐</option>
+                        <option value="4" ${item.mastery === 4 ? 'selected' : ''}>⭐⭐⭐⭐</option>
+                        <option value="3" ${item.mastery === 3 ? 'selected' : ''}>⭐⭐⭐</option>
+                        <option value="2" ${item.mastery === 2 ? 'selected' : ''}>⭐⭐</option>
+                        <option value="1" ${item.mastery === 1 ? 'selected' : ''}>⭐</option>
+                    </select>
+                    <input type="text" value="${item.tag}" oninput="demoData.songs[${idx}].tag=this.value; updatePreview()" placeholder="장르" class="w-16 bg-slate-900 border border-slate-800 text-[10px] px-1 py-1 rounded text-slate-200 text-center">
+                    <button onclick="deleteSongRow(${idx})" class="text-slate-500 hover:text-rose-400 shrink-0"><i class="fa-solid fa-trash text-xs"></i></button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function initFortunesTextarea() {
+            const lines = demoData.fortunes.map(f => `${f.emoji}|${f.text}`).join('\n');
+            document.getElementById('data-fortunes-textarea').value = lines;
+        }
+
+        function syncCustomFortunes() {
+            const value = document.getElementById('data-fortunes-textarea').value;
+            const lines = value.split('\n');
+            const arr = [];
+            lines.forEach(line => {
+                const parts = line.split('|');
+                if (parts.length >= 2) {
+                    arr.push({ emoji: parts[0].trim(), text: parts[1].trim() });
+                } else if (line.trim() !== '') {
+                    arr.push({ emoji: '🔮', text: line.trim() });
+                }
+            });
+            demoData.fortunes = arr;
+            updatePreview();
+        }
+
+        function loadDemoData() {
+            document.getElementById('data-name').value = demoData.streamer.name;
+            document.getElementById('data-subtext').value = demoData.streamer.subtext;
+            document.getElementById('data-soop-id').value = demoData.streamer.soopId;
+            document.getElementById('data-avatar').value = demoData.streamer.avatar;
+            document.getElementById('data-banner').value = demoData.streamer.banner;
+            
+            document.getElementById('data-intro-text').value = demoData.introText;
+            document.getElementById('data-likes').value = demoData.likeHate.likes;
+            document.getElementById('data-hates').value = demoData.likeHate.hates;
+            document.getElementById('data-broadcast-platform').value = demoData.broadcast.platform;
+            document.getElementById('data-broadcast-time').value = demoData.broadcast.time;
+            document.getElementById('data-broadcast-rule').value = demoData.broadcast.rule;
+
+            renderSocialLinksEditor();
+            renderAnniversaryEditor();
+            renderAnnouncementEditor();
+            renderScheduleEditor();
+            renderOutfitEditor();
+            renderSigballoonEditor();
+            renderHomeworkEditor();
+            renderSongsEditor();
+            initFortunesTextarea();
+
+            updatePreview();
+            showToast("🍀 데모 데이터 로드 성공!");
+        }
+
+        function generateHTMLCode() {
+            const name = document.getElementById('data-name').value || '스트리머 이름';
+            const subtext = document.getElementById('data-subtext').value || '';
+            const avatar = document.getElementById('data-avatar').value || 'https://placehold.co/300';
+            const banner = document.getElementById('data-banner').value || '';
+
+            const primary = document.getElementById('cfg-color-primary').value;
+            const secondary = document.getElementById('cfg-color-secondary').value;
+            const font = document.getElementById('cfg-font').value;
+            const fontSize = document.getElementById('cfg-font-size').value; // 새로 생성된 폰트 크기 변수
+            const bgStyle = document.getElementById('cfg-bg-style').value;
+            const borderStyle = document.getElementById('cfg-border-style').value;
+            const bgPattern = document.getElementById('cfg-bg-pattern').value;
+            const animFloat = document.getElementById('cfg-anim-float').checked;
+            const animEmojisRaw = document.getElementById('cfg-anim-emojis').value;
+            const animDir = document.getElementById('cfg-anim-direction').value;
+            const animSpeed = document.getElementById('cfg-anim-speed').value;
+
+            // 다크모드 시스템 설정 수집
+            const dmDefault = document.getElementById('cfg-darkmode-default').value;
+            const dmSwitch = document.getElementById('cfg-darkmode-switch').value;
+
+            // 모듈 활성 상태 및 타이틀 수집
+            const getMod = (id) => modulesData.find(m => m.id === id);
+            
+            const showIntro = getMod('intro').checked;
+            const showLikeHate = getMod('likehate').checked;
+            const showAnniversary = getMod('anniversary').checked;
+            const showBroadcast = getMod('broadcast').checked;
+            const showAnnouncement = getMod('announcement').checked;
+            const showSchedule = getMod('schedule').checked;
+            const showOutfits = getMod('outfits').checked;
+            const showSigballoon = getMod('sigballoon').checked;
+            const showHomework = getMod('homework').checked;
+            const showSongbook = getMod('songbook').checked;
+            const showFortune = getMod('fortune').checked;
+
+            const tIntro = getMod('intro').title;
+            const tLikeHate = getMod('likehate').title;
+            const tAnniversary = getMod('anniversary').title;
+            const tBroadcast = getMod('broadcast').title;
+            const tAnnouncement = getMod('announcement').title;
+            const tSchedule = getMod('schedule').title;
+            const tOutfits = getMod('outfits').title;
+            const tSigballoon = getMod('sigballoon').title;
+            const tHomework = getMod('homework').title;
+            const tSongbook = getMod('songbook').title;
+            const tFortune = getMod('fortune').title;
+
+            const introText = document.getElementById('data-intro-text').value;
+            const likesStr = document.getElementById('data-likes').value;
+            const hatesStr = document.getElementById('data-hates').value;
+            const bcPlatform = document.getElementById('data-broadcast-platform').value;
+            const bcTime = document.getElementById('data-broadcast-time').value;
+            const bcRule = document.getElementById('data-broadcast-rule').value;
+
+            // 패턴 스타일 생성
+            let backgroundPatternCSS = '';
+            if (bgPattern === 'pattern-dots') {
+                backgroundPatternCSS = `background-image: radial-gradient(${primary}20 1px, transparent 1px); background-size: 16px 16px;`;
+            } else if (bgPattern === 'pattern-grid') {
+                backgroundPatternCSS = `background-image: linear-gradient(to right, ${primary}10 1px, transparent 1px), linear-gradient(to bottom, ${primary}10 1px, transparent 1px); background-size: 18px 18px;`;
+            } else if (bgPattern === 'pattern-stripes') {
+                backgroundPatternCSS = `background-image: repeating-linear-gradient(45deg, ${primary}05 0px, ${primary}05 10px, transparent 10px, transparent 20px);`;
+            }
+
+            let minSec = 10, maxSec = 18;
+            if (animSpeed === 'slow') { minSec = 18; maxSec = 30; }
+            else if (animSpeed === 'fast') { minSec = 4; maxSec = 9; }
+
+            let backgroundIcons = '';
+            const emojis = animEmojisRaw ? animEmojisRaw.split(',').map(e => e.trim()).filter(Boolean) : ['🍀', '💚', '✨', '🌱'];
+            if (animFloat && emojis.length > 0) {
+                for (let i = 0; i < 14; i++) {
+                    const randomLeft = Math.floor(Math.random() * 90) + 5;
+                    const randomDelay = Math.floor(Math.random() * 12);
+                    const randomDuration = Math.floor(Math.random() * (maxSec - minSec)) + minSec;
+                    const randomSize = Math.floor(Math.random() * 20) + 16;
+                    const emoji = emojis[i % emojis.length];
+                    const startYPos = (animDir === 'float-up') ? 'bottom: -60px;' : 'top: -60px;';
+                    const activeAnim = (animDir === 'float-up') ? 'floatUp' : 'fallDown';
+                    backgroundIcons += `<span class="absolute text-opacity-35 pointer-events-none z-0" style="left: ${randomLeft}%; ${startYPos} font-size: ${randomSize}px; animation: ${activeAnim} ${randomDuration}s linear infinite; animation-delay: ${randomDelay}s; opacity: 0.25;">${emoji}</span>\n`;
+                }
+            }
+
+            const songsJSON = JSON.stringify(demoData.songs);
+            const fortunesJSON = JSON.stringify(demoData.fortunes);
+
+            // 중요: 닫는 스크립트 태그 파싱 오류 방지를 위한 분할 결합
+            let html = '';
+            html += '<!DOCTYPE html>\n<html lang="ko" class="">\n<head>\n';
+            html += '    <meta charset="UTF-8">\n';
+            html += '    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n';
+            html += '    <title>' + name + '의 스페이스 프로필</title>\n';
+            html += '    <script src="https://cdn.tailwindcss.com"><' + '/script>\n';
+            html += '    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&family=Nanum+Neo:wght@400;700;800&family=Gaegu:wght@400;700&family=Black+Han+Sans&family=Jua&family=Dongle:wght@450;700&family=Gowun+Batang:wght@400;700&family=Bagel+Fat+One&family=Gowun+Dodum&family=Do+Hyeon&family=Yeon+Sung&family=Orbit&family=Single+Day&family=Poor+Story&display=swap" rel="stylesheet">\n';
+            html += '    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">\n';
+            html += '    <script>\n';
+            html += '        tailwind.config = {\n';
+            html += '            darkMode: \'class\',\n';
+            html += '            theme: {\n';
+            html += '                extend: {\n';
+            html += '                    fontFamily: {\n';
+            html += '                        sans: [\'Noto Sans KR\', \'Inter\', \'sans-serif\'],\n';
+            html += '                        neo: [\'Nanum Neo\', \'sans-serif\'],\n';
+            html += '                        cute: [\'Gaegu\', \'sans-serif\'],\n';
+            html += '                        impact: [\'Black Han Sans\', \'sans-serif\'],\n';
+            html += '                        jua: [\'Jua\', \'sans-serif\'],\n';
+            html += '                        dongle: [\'Dongle\', \'sans-serif\'],\n';
+            html += '                        batang: [\'Gowun Batang\', \'serif\'],\n';
+            html += '                        bagel: [\'Bagel Fat One\', \'cursive\'],\n';
+            html += '                        dodum: [\'Gowun Dodum\', \'sans-serif\'],\n';
+            html += '                        dohyeon: [\'Do Hyeon\', \'sans-serif\'],\n';
+            html += '                        yeonsung: [\'Yeon Sung\', \'serif\'],\n';
+            html += '                        orbit: [\'Orbit\', \'sans-serif\'],\n';
+            html += '                        singleday: [\'Single Day\', \'cursive\'],\n';
+            html += '                        poorstory: [\'Poor Story\', \'system-ui\'],\n';
+            html += '                    },\n';
+            html += '                    boxShadow: {\n';
+            html += '                        \'premium\': \'0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08)\',\n';
+            html += '                        \'neo\': \'6px 6px 0px 0px #090D16\',\n';
+            html += '                        \'neo-sm\': \'4px 4px 0px 0px #090D16\',\n';
+            html += '                    }\n';
+            html += '                }\n';
+            html += '            }\n';
+            html += '        }\n';
+            html += '    <' + '/script>\n';
+            html += '    <style>\n';
+            // dynamic baseline font scaling on HTML element using selected value from builder
+            html += '        html {\n';
+            html += '            font-size: ' + fontSize + 'px;\n';
+            html += '            scroll-behavior: smooth;\n';
+            html += '        }\n';
+            html += '        .custom-pattern {\n';
+            html += '            ' + backgroundPatternCSS + '\n';
+            html += '        }\n';
+            html += '        @keyframes floatUp {\n';
+            html += '            0% { transform: translateY(0) rotate(0deg); opacity: 0; }\n';
+            html += '            10% { opacity: 0.35; }\n';
+            html += '            90% { opacity: 0.35; }\n';
+            html += '            100% { transform: translateY(-115vh) rotate(360deg); opacity: 0; }\n';
+            html += '        }\n';
+            html += '        @keyframes fallDown {\n';
+            html += '            0% { transform: translateY(0) rotate(0deg); opacity: 0; }\n';
+            html += '            10% { opacity: 0.35; }\n';
+            html += '            90% { opacity: 0.35; }\n';
+            html += '            100% { transform: translateY(115vh) rotate(-360deg); opacity: 0; }\n';
+            html += '        }\n';
+            html += '        @keyframes bouncy {\n';
+            html += '            0%, 100% { transform: scale(1); }\n';
+            html += '            30% { transform: scale(1.15, 0.85); }\n';
+            html += '            50% { transform: scale(0.9, 1.1) rotate(-1.5deg); }\n';
+            html += '            80% { transform: scale(1.05, 0.95) rotate(1deg); }\n';
+            html += '        }\n';
+            html += '        .bouncy-hover:hover {\n';
+            html += '            animation: bouncy 0.65s ease-in-out;\n';
+            html += '        }\n';
+            html += '        ::-webkit-scrollbar { width: 5px; height: 5px; }\n';
+            html += '        ::-webkit-scrollbar-thumb { background: ' + primary + '40; border-radius: 4px; }\n';
+            html += '        .genre-tab-active {\n';
+            html += '            background-color: ' + primary + ' !important;\n';
+            html += '            border-color: ' + primary + ' !important;\n';
+            html += '            color: #ffffff !important;\n';
+            html += '        }\n';
+            html += '        #song-search-box:focus {\n';
+            html += '            border-color: ' + primary + ' !important;\n';
+            html += '        }\n';
+            html += '        .carousel-container {\n';
+            html += '            display: flex;\n';
+            html += '            gap: 1rem;\n';
+            html += '            overflow-x: auto;\n';
+            html += '            scroll-snap-type: x mandatory;\n';
+            html += '            -webkit-overflow-scrolling: touch;\n';
+            html += '            scrollbar-width: thin;\n';
+            html += '        }\n';
+            html += '        .carousel-item {\n';
+            html += '            flex: 0 0 auto;\n';
+            html += '            scroll-snap-align: start;\n';
+            html += '        }\n';
+            html += '    </style>\n';
+            html += '</head>\n';
+
+            let bodyBgClass = 'bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-50';
+            if (bgStyle === 'dark') bodyBgClass = 'bg-slate-900 dark:bg-slate-950 text-slate-100 dark:text-slate-50';
+            else if (bgStyle === 'midnight') bodyBgClass = 'bg-slate-950 dark:bg-slate-950 text-slate-50 dark:text-slate-50';
+            else if (bgStyle === 'cozy') bodyBgClass = 'bg-amber-50/70 dark:bg-stone-950 text-stone-800 dark:text-stone-100';
+            else if (bgStyle === 'pastel-pink') bodyBgClass = 'bg-rose-50/85 dark:bg-rose-950 text-pink-900 dark:text-pink-100';
+            else if (bgStyle === 'pastel-blue') bodyBgClass = 'bg-sky-50/85 dark:bg-sky-950 text-sky-900 dark:text-sky-100';
+            else if (bgStyle === 'monochrome') bodyBgClass = 'bg-neutral-100 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-50';
+
+            html += '<body class="' + font + ' ' + bodyBgClass + ' custom-pattern min-h-screen relative overflow-x-hidden flex flex-col pb-28 transition-colors duration-300">\n';
+            html += '    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">\n';
+            html += '        ' + backgroundIcons + '\n';
+            html += '    </div>\n';
+            html += '    <div class="w-full max-w-lg mx-auto px-4 pt-6 relative z-10 space-y-6">\n';
+
+            let cardBgClass = 'bg-white/95 dark:bg-slate-900/95 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-800';
+            if (bgStyle === 'dark') cardBgClass = 'bg-slate-950/95 dark:bg-slate-900/95 text-slate-100 dark:text-slate-100 border border-slate-800 dark:border-slate-800';
+            else if (bgStyle === 'midnight') cardBgClass = 'bg-slate-900/90 dark:bg-slate-900/95 text-slate-100 dark:text-slate-100 border border-slate-800 dark:border-slate-800';
+            else if (bgStyle === 'cozy') cardBgClass = 'bg-stone-100/95 dark:bg-stone-900/95 text-stone-900 dark:text-stone-100 border border-stone-200 dark:border-stone-800';
+            else if (bgStyle === 'pastel-pink') cardBgClass = 'bg-white/95 dark:bg-pink-950/95 text-pink-950 dark:text-pink-100 border border-pink-100 dark:border-pink-900';
+            else if (bgStyle === 'pastel-blue') cardBgClass = 'bg-white/95 dark:bg-sky-950/95 text-sky-950 dark:text-sky-100 border border-sky-100 dark:border-sky-900';
+            else if (bgStyle === 'monochrome') cardBgClass = 'bg-white/95 dark:bg-neutral-900/95 text-neutral-900 dark:text-neutral-100 border border-neutral-200 dark:border-neutral-800';
+
+            // 1. 프로필 정보 기본 카드
+            html += '        <div class="' + cardBgClass + ' ' + borderStyle + ' overflow-hidden relative transition-all hover:scale-[1.01] shadow-xl">\n';
+            if (banner) {
+                html += '            <div class="w-full h-32 overflow-hidden relative border-b border-slate-200 dark:border-slate-800/50">\n';
+                html += '                <img src="' + banner + '" class="w-full h-full object-cover" onerror="this.src=\'https://placehold.co/800x350/0f172a/059669?text=SOOP\'">\n';
+                html += '                <span class="absolute top-3 right-3 bg-emerald-500 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full animate-pulse"><i class="fa-solid fa-satellite-dish"></i> ON AIR</span>\n';
+                html += '            </div>\n';
+            } else {
+                html += '            <div class="w-full h-20 bg-gradient-to-r from-emerald-500 to-teal-400 border-b border-slate-200 dark:border-slate-800/50 relative">\n';
+                html += '                <span class="absolute top-3 right-3 bg-slate-950 text-emerald-400 font-bold text-[9px] px-2 py-0.5 rounded-full animate-pulse"><i class="fa-solid fa-satellite-dish"></i> ON AIR</span>\n';
+                html += '            </div>\n';
+            }
+            html += '            <div class="p-6 text-center -mt-12 relative">\n';
+            html += '                <div class="relative inline-block mb-3">\n';
+            html += '                    <img src="' + avatar + '" alt="Avatar" class="w-24 h-24 rounded-full border-4 object-cover mx-auto shadow-md bouncy-hover" style="border-color: ' + primary + '" onerror="this.src=\'https://placehold.co/300x300/e6fffa/047857?text=SOOP\'">\n';
+            html += '                </div>\n';
+            html += '                <h1 class="text-2xl font-black mb-1 flex items-center justify-center gap-1.5" style="color: ' + primary + '">' + name + '</h1>\n';
+            html += '                <p class="text-xs text-slate-400 dark:text-slate-400 mb-5 font-semibold">' + subtext + '</p>\n';
+            html += '                <div class="flex flex-wrap gap-4 justify-center mb-1">\n';
+            demoData.socials.forEach(link => {
+                const innerDisplay = link.emoji ? link.emoji : '<i class="' + link.icon + ' text-sm"></i>';
+                html += '                    <a href="' + link.url + '" target="_blank" class="w-11 h-11 rounded-full text-white transition transform hover:scale-110 flex items-center justify-center shadow-lg border border-white/10" style="background-color: ' + link.color + '" title="' + link.label + '">\n';
+                html += '                        <span class="flex items-center justify-center text-lg leading-none h-full w-full select-none">' + innerDisplay + '</span>\n';
+                html += '                    </a>\n';
+            });
+            html += '                </div>\n';
+            html += '            </div>\n';
+            html += '        </div>\n';
+
+            // 2. 자기소개 모듈
+            if (showIntro && introText) {
+                html += '        <div class="' + cardBgClass + ' ' + borderStyle + ' p-5">\n';
+                html += '            <h2 class="text-sm font-black mb-3 flex items-center gap-1.5" style="color: ' + primary + '">\n';
+                html += '                <i class="fa-solid fa-address-card"></i> ' + tIntro + '\n';
+                html += '            </h2>\n';
+                html += '            <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-semibold whitespace-pre-line">' + introText + '</p>\n';
+                html += '        </div>\n';
+            }
+
+            // 3. Like & Hate 모듈
+            if (showLikeHate && (likesStr || hatesStr)) {
+                html += '        <div class="' + cardBgClass + ' ' + borderStyle + ' p-5">\n';
+                html += '            <h2 class="text-sm font-black mb-4 flex items-center gap-1.5" style="color: ' + primary + '">\n';
+                html += '                <i class="fa-solid fa-heart-crack"></i> ' + tLikeHate + '\n';
+                html += '            </h2>\n';
+                html += '            <div class="grid grid-cols-2 gap-4">\n';
+                
+                // Likes List
+                html += '                <div class="bg-emerald-500/5 border border-emerald-500/10 p-3 rounded-xl">\n';
+                html += '                    <span class="block text-xs font-bold text-emerald-500 mb-2 flex items-center gap-1"><i class="fa-solid fa-heart"></i> Like</span>\n';
+                html += '                    <div class="flex flex-col gap-1.5">\n';
+                const likes = likesStr ? likesStr.split(',').map(x => x.trim()).filter(Boolean) : [];
+                if(likes.length === 0) html += '                        <span class="text-[11px] text-slate-400">없음</span>\n';
+                likes.forEach(lk => {
+                    html += '                        <span class="text-[11px] text-slate-600 dark:text-slate-300 font-semibold"><i class="fa-solid fa-circle-check text-emerald-500 mr-1.5 text-[9px]"></i>' + lk + '</span>\n';
+                });
+                html += '                    </div>\n';
+                html += '                </div>\n';
+
+                // Hates List
+                html += '                <div class="bg-rose-500/5 border border-rose-500/10 p-3 rounded-xl">\n';
+                html += '                    <span class="block text-xs font-bold text-rose-500 mb-2 flex items-center gap-1"><i class="fa-solid fa-face-frown"></i> Hate</span>\n';
+                html += '                    <div class="flex flex-col gap-1.5">\n';
+                const hates = hatesStr ? hatesStr.split(',').map(x => x.trim()).filter(Boolean) : [];
+                if(hates.length === 0) html += '                        <span class="text-[11px] text-slate-400">없음</span>\n';
+                hates.forEach(ht => {
+                    html += '                        <span class="text-[11px] text-slate-600 dark:text-slate-300 font-semibold"><i class="fa-solid fa-circle-xmark text-rose-500 mr-1.5 text-[9px]"></i>' + ht + '</span>\n';
+                });
+                html += '                    </div>\n';
+                html += '                </div>\n';
+
+                html += '            </div>\n';
+                html += '        </div>\n';
+            }
+
+            // 4. 기념일 & 디데이 모듈
+            if (showAnniversary && demoData.anniversaries.length > 0) {
+                html += '        <div class="' + cardBgClass + ' ' + borderStyle + ' p-5">\n';
+                html += '            <h2 class="text-sm font-black mb-3 flex items-center gap-1.5" style="color: ' + primary + '">\n';
+                html += '                <i class="fa-solid fa-calendar-day"></i> ' + tAnniversary + '\n';
+                html += '            </h2>\n';
+                html += '            <div class="grid grid-cols-1 gap-2">\n';
+                demoData.anniversaries.forEach(item => {
+                    html += '                <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-100 dark:border-slate-850">\n';
+                    html += '                    <div>\n';
+                    html += '                        <span class="block text-xs font-bold text-slate-800 dark:text-slate-200">' + item.name + '</span>\n';
+                    html += '                        <span class="block text-[10px] text-slate-400 font-medium mt-0.5">' + item.date + '</span>\n';
+                    html += '                    </div>\n';
+                    html += '                    <span class="text-xs font-black px-2.5 py-1 rounded-lg" style="background-color: ' + primary + '20; color: ' + primary + ';" id="dday-' + item.id + '">계산 중...</span>\n';
+                    html += '                </div>\n';
+                });
+                html += '            </div>\n';
+                html += '        </div>\n';
+            }
+
+            // 5. 방송 플랫폼 및 룰셋 모듈
+            if (showBroadcast && (bcPlatform || bcTime || bcRule)) {
+                html += '        <div class="' + cardBgClass + ' ' + borderStyle + ' p-5">\n';
+                html += '            <h2 class="text-sm font-black mb-3.5 flex items-center gap-1.5" style="color: ' + primary + '">\n';
+                html += '                <i class="fa-solid fa-circle-info"></i> ' + tBroadcast + '\n';
+                html += '            </h2>\n';
+                html += '            <div class="space-y-3.5">\n';
+                if(bcPlatform) {
+                    html += '                <div class="text-xs flex items-center justify-between border-b border-slate-100 dark:border-slate-800/40 pb-2">\n';
+                    html += '                    <span class="text-slate-400 font-bold">방송 플랫폼</span>\n';
+                    html += '                    <span class="font-extrabold" style="color: ' + primary + '">' + bcPlatform + '</span>\n';
+                    html += '                </div>\n';
+                }
+                if(bcTime) {
+                    html += '                <div class="text-xs flex items-center justify-between border-b border-slate-100 dark:border-slate-800/40 pb-2">\n';
+                    html += '                    <span class="text-slate-400 font-bold">정규 일정 시간</span>\n';
+                    html += '                    <span class="font-semibold text-slate-700 dark:text-slate-200">' + bcTime + '</span>\n';
+                    html += '                </div>\n';
+                }
+                if(bcRule) {
+                    html += '                <div class="bg-slate-50 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850">\n';
+                    html += '                    <span class="block text-[11px] font-bold text-slate-400 mb-1.5"><i class="fa-solid fa-scale-balanced mr-1"></i> 방송국 필수 이용 규칙</span>\n';
+                    html += '                    <p class="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed font-semibold whitespace-pre-line">' + bcRule + '</p>\n';
+                    html += '                </div>\n';
+                }
+                html += '            </div>\n';
+                html += '        </div>\n';
+            }
+
+            // 6. 공지사항 모듈
+            if (showAnnouncement && demoData.announcements.length > 0) {
+                html += '        <div class="' + cardBgClass + ' ' + borderStyle + ' p-5">\n';
+                html += '            <h2 class="text-sm font-black mb-3 flex items-center gap-1.5" style="color: ' + primary + '">\n';
+                html += '                <i class="fa-solid fa-bullhorn"></i> ' + tAnnouncement + '\n';
+                html += '            </h2>\n';
+                html += '            <div class="space-y-3">\n';
+                demoData.announcements.forEach(anc => {
+                    html += '                <div class="p-3.5 bg-rose-500/5 rounded-xl border border-rose-500/10 relative overflow-hidden">\n';
+                    html += '                    <div class="flex items-center justify-between mb-1.5">\n';
+                    html += '                        <span class="text-xs font-black text-rose-500">' + anc.title + '</span>\n';
+                    html += '                        <span class="text-[9px] text-slate-400 font-medium">' + anc.date + '</span>\n';
+                    html += '                    </div>\n';
+                    html += '                    <p class="text-[11px] text-slate-600 dark:text-slate-300 font-medium leading-relaxed whitespace-pre-line">' + anc.content + '</p>\n';
+                    html += '                </div>\n';
+                });
+                html += '            </div>\n';
+                html += '        </div>\n';
+            }
+
+            // 7. 주간 일정표 모듈
+            if (showSchedule) {
+                html += '        <div class="' + cardBgClass + ' ' + borderStyle + ' p-5">\n';
+                html += '            <h2 class="text-sm font-black mb-3.5 flex items-center gap-1.5" style="color: ' + primary + '">\n';
+                html += '                <i class="fa-solid fa-calendar-check"></i> ' + tSchedule + '\n';
+                html += '            </h2>\n';
+                html += '            <div class="space-y-2.5">\n';
+
+                demoData.schedule.forEach(item => {
+                    const rowColor = item.color || primary;
+                    let rowBgStyle = 'background-color: ' + rowColor + '15; border-color: ' + rowColor + '30;';
+                    let textHighlightStyle = 'color: ' + rowColor + ';';
+                    let badgeStyle = 'background-color: ' + rowColor + '; color: #ffffff;';
+
+                    html += '                <div class="py-2.5 px-3 rounded-xl border flex items-center justify-between text-xs transition-all animate-fade" style="' + rowBgStyle + '">\n';
+                    html += '                    <div class="flex items-center gap-3">\n';
+                    html += '                        <span class="font-black px-2.5 py-0.5 rounded-lg text-[10px]" style="' + badgeStyle + '">' + item.day + '</span>\n';
+                    html += '                        <span class="text-slate-400 font-semibold">' + item.time + '</span>\n';
+                    html += '                    </div>\n';
+                    html += '                    <div class="text-right flex items-center gap-2">\n';
+                    html += '                        <span class="font-bold" style="' + textHighlightStyle + '">' + item.content + '</span>\n';
+                    if (item.tag) {
+                        html += '                        <span class="bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-400 px-1.5 py-0.5 rounded-md">' + item.tag + '</span>\n';
+                    }
+                    html += '                    </div>\n';
+                    html += '                </div>\n';
+                });
+                html += '            </div>\n';
+                html += '        </div>\n';
+            }
+
+            // 8. 의상 & 헤어 도감 (좌우 스와이프 캐러셀)
+            if (showOutfits) {
+                html += '        <div class="' + cardBgClass + ' ' + borderStyle + ' p-5">\n';
+                html += '            <div class="flex items-center justify-between mb-1">\n';
+                html += '                <h2 class="text-sm font-black flex items-center gap-1.5" style="color: ' + primary + '">\n';
+                html += '                    <i class="fa-solid fa-shirt"></i> ' + tOutfits + '\n';
+                html += '                </h2>\n';
+                html += '                <span class="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i class="fa-solid fa-arrow-left-right text-[8px]"></i> 밀어서 보기</span>\n';
+                html += '            </div>\n';
+                html += '            <p class="text-[10px] text-slate-400 mb-4 font-medium leading-relaxed">스트리머가 방송에서 착용하는 보유 코디 세트입니다.</p>\n';
+                html += '            <div class="carousel-container pb-2 shrink-0">\n';
+                demoData.outfits.forEach(item => {
+                    html += '                <div class="carousel-item w-[150px] bg-slate-50 dark:bg-slate-950/40 rounded-xl p-2.5 border border-slate-100 dark:border-slate-850 flex flex-col justify-between transition hover:scale-[1.02]">\n';
+                    html += '                    <img src="' + item.img + '" class="w-full aspect-[3/4] rounded-lg object-cover mb-2 shadow-sm" onerror="this.src=\'https://placehold.co/300x400/e2f0d9/385723?text=Outfit\'">\n';
+                    html += '                    <div>\n';
+                    html += '                        <h4 class="text-[11px] font-black mb-1 text-slate-700 dark:text-slate-200 truncate">' + item.title + '</h4>\n';
+                    html += '                        <p class="text-[9px] text-slate-400 font-medium leading-relaxed line-clamp-2">' + item.desc + '</p>\n';
+                    html += '                    </div>\n';
+                    html += '                </div>\n';
+                });
+                html += '            </div>\n';
+                html += '        </div>\n';
+            }
+
+            // 9. 시그니처 와이드 리액션 가이드 (좌우 스와이프 캐러셀)
+            if (showSigballoon) {
+                html += '        <div class="' + cardBgClass + ' ' + borderStyle + ' p-5">\n';
+                html += '            <div class="flex items-center justify-between mb-1">\n';
+                html += '                <h2 class="text-sm font-black flex items-center gap-1.5" style="color: ' + primary + '">\n';
+                html += '                    <i class="fa-solid fa-star"></i> ' + tSigballoon + '\n';
+                html += '                </h2>\n';
+                html += '                <span class="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full font-bold flex items-center gap-1"><i class="fa-solid fa-arrow-left-right text-[8px]"></i> 밀어서 보기</span>\n';
+                html += '            </div>\n';
+                html += '            <p class="text-[10px] text-slate-400 mb-4 font-medium leading-relaxed">별풍선 시그니처별 전용 액션 및 화려한 리액션 규격입니다.</p>\n';
+                html += '            <div class="carousel-container pb-2 shrink-0">\n';
+                demoData.sigballoons.forEach(item => {
+                    html += '                <div class="carousel-item bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-850 flex flex-col gap-1 relative overflow-hidden w-[240px] transition hover:scale-[1.02] shadow-sm">\n';
+                    html += '                    <div class="w-full h-[134px] rounded-lg overflow-hidden shrink-0">\n';
+                    html += '                        <img src="' + item.img + '" class="w-full h-full object-cover" onerror="this.src=\'https://placehold.co/293x164/fff2cc/7f6000?text=Reaction\'">\n';
+                    html += '                    </div>\n';
+                    html += '                    <div class="flex items-center justify-between text-[11px] px-1 mt-1 shrink-0">\n';
+                    html += '                        <span class="font-extrabold text-amber-500"><i class="fa-solid fa-star"></i> ' + item.count + '</span>\n';
+                    html += '                        <span class="font-bold text-slate-600 dark:text-slate-200 truncate max-w-[130px]">' + item.name + '</span>\n';
+                    html += '                    </div>\n';
+                    html += '                </div>\n';
+                });
+                html += '            </div>\n';
+                html += '        </div>\n';
+            }
+
+            // 10. 업보/숙제 트래커 (시청자 SOOP ID 아바타 연동)
+            if (showHomework) {
+                html += '        <div class="' + cardBgClass + ' ' + borderStyle + ' p-5">\n';
+                html += '            <h2 class="text-sm font-black mb-3.5 flex items-center gap-1.5" style="color: ' + primary + '">\n';
+                html += '                <i class="fa-solid fa-fire"></i> ' + tHomework + '\n';
+                html += '            </h2>\n';
+                html += '            <div class="space-y-3.5">\n';
+
+                demoData.homework.forEach(item => {
+                    // 시청자 아바타 동적 로드 구조 설정
+                    let viewerAvatarHtml = '';
+                    if (item.viewerId) {
+                        const firstTwo = item.viewerId.slice(0, 2).toLowerCase();
+                        const sponsorAvatarUrl = `https://profile.img.afreecatv.com/LOGO/${firstTwo}/${item.viewerId}/${item.viewerId}.jpg`;
+                        viewerAvatarHtml = `<img src="${sponsorAvatarUrl}" alt="Sponsor" class="w-7 h-7 rounded-full border border-slate-300 dark:border-slate-700 object-cover shadow-sm shrink-0" onerror="this.src='https://placehold.co/100x100/10b981/ffffff?text=S'">`;
+                    } else {
+                        viewerAvatarHtml = `<div class="w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center border border-slate-300 dark:border-slate-700 text-[10px] font-bold text-slate-400 shrink-0"><i class="fa-solid fa-user"></i></div>`;
+                    }
+
+                    html += '                <div class="bg-slate-50 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850 flex items-center gap-3">\n';
+                    html += '                    ' + viewerAvatarHtml + '\n';
+                    html += '                    <div class="flex-1 min-w-0">\n';
+                    html += '                        <div class="flex justify-between items-center mb-1.5">\n';
+                    html += '                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">' + item.title + '</span>\n';
+
+                    let badgeClass = 'bg-slate-400/10 text-slate-400';
+                    if (item.status === '완료') badgeClass = 'bg-emerald-500/10 text-emerald-500';
+                    else if (item.status === '진행중') badgeClass = 'bg-blue-500/10 text-blue-500';
+
+                    html += '                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-lg shrink-0 ' + badgeClass + '">' + item.status + '</span>\n';
+                    html += '                        </div>\n';
+                    html += '                        <div class="flex items-center gap-2">\n';
+                    html += '                            <div class="flex-1 bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">\n';
+                    html += '                                <div class="h-full rounded-full transition-all" style="width: ' + item.progress + '%; background-color: ' + primary + '"></div>\n';
+                    html += '                            </div>\n';
+                    html += '                            <span class="text-[10px] font-bold text-slate-500 shrink-0">' + item.progress + '%</span>\n';
+                    html += '                        </div>\n';
+                    html += '                        <div class="text-[9px] text-slate-400 mt-1 flex justify-between">\n';
+                    html += '                            <span class="truncate">보상: ' + item.reward + '</span>\n';
+                    if (item.viewerId) {
+                        html += '                            <span class="text-emerald-500 font-bold shrink-0">@' + item.viewerId + '</span>\n';
+                    }
+                    html += '                        </div>\n';
+                    html += '                    </div>\n';
+                    html += '                </div>\n';
+                });
+
+                html += '            </div>\n';
+                html += '        </div>\n';
+            }
+
+            // 11. 애창곡 노래책 모듈 (테마 연동 가변 룩앤필 구성)
+            if (showSongbook) {
+                const songTags = Array.from(new Set(demoData.songs.map(s => s.tag).filter(Boolean)));
+                
+                html += '        <div class="' + cardBgClass + ' ' + borderStyle + ' p-5 font-sans">\n';
+                html += '            <span class="block text-[9px] font-bold uppercase tracking-widest mb-1" style="color: ' + primary + '">PREMIUM JUKEBOX PLAYLIST</span>\n';
+                html += '            <h2 class="text-xl font-extrabold text-slate-900 dark:text-white mb-4 flex items-center gap-2">\n';
+                html += '                ' + name + '의 노래책 <span style="color: ' + primary + '">🎵</span>\n';
+                html += '            </h2>\n';
+                
+                html += '            <div class="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none shrink-0" style="scrollbar-width: none;">\n';
+                html += '                <button onclick="filterSongsByTag(\'all\', this)" class="genre-tab-btn genre-tab-active shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all border shadow-md" style="background-color: ' + primary + '; border-color: ' + primary + ';">전체보기</button>\n';
+                songTags.forEach(tag => {
+                    html += '                <button onclick="filterSongsByTag(\'' + tag + '\', this)" class="genre-tab-btn shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900" onmouseover="this.style.borderColor=\'' + primary + '\'" onmouseout="this.style.borderColor=\'\'">' + tag + '</button>\n';
+                });
+                html += '            </div>\n';
+
+                html += '            <div class="relative mb-5">\n';
+                html += '                <input type="text" id="song-search-box" oninput="filterSongsList()" placeholder="곡 제목 또는 아티스트 명을 검색해보세요..." class="w-full bg-slate-50 dark:bg-slate-900/65 border-2 border-slate-200 dark:border-slate-800 rounded-2xl pl-10 pr-4 py-3 text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-0 transition-all shadow-sm">\n';
+                html += '                <i class="fa-solid fa-music absolute left-4 top-4 text-xs" style="color: ' + primary + '"></i>\n';
+                html += '            </div>\n';
+
+                html += '            <div class="border-2 border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm bg-white dark:bg-slate-950">\n';
+                html += '                <div class="grid grid-cols-12 px-3 py-2 text-[10px] font-extrabold text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800" style="background-color: ' + primary + '10">\n';
+                html += '                    <div class="col-span-2 text-center">장르</div>\n';
+                html += '                    <div class="col-span-4 pl-2">곡 제목</div>\n';
+                html += '                    <div class="col-span-3">아티스트</div>\n';
+                html += '                    <div class="col-span-2 text-center">숙련도</div>\n';
+                html += '                    <div class="col-span-1 text-center">신청</div>\n';
+                html += '                </div>\n';
+                html += '                <div id="songs-list-view" class="divide-y divide-slate-100 dark:divide-slate-800/60 max-h-[480px] overflow-y-auto">\n';
+                html += '                </div>\n';
+                html += '            </div>\n';
+                html += '        </div>\n';
+            }
+
+            // 12. 운세 및 케미 궁합 모듈
+            if (showFortune) {
+                html += '        <div class="' + cardBgClass + ' ' + borderStyle + ' p-5 text-center">\n';
+                html += '            <h2 class="text-sm font-black mb-3 flex items-center justify-center gap-1.5" style="color: ' + primary + '">\n';
+                html += '                <i class="fa-solid fa-cookie"></i> ' + tFortune + '\n';
+                html += '            </h2>\n';
+                html += '            <div id="fortune-box" class="py-4 px-3 bg-slate-50 dark:bg-slate-950/40 rounded-xl mb-3 flex items-center justify-center min-h-[4rem] border border-slate-100 dark:border-slate-850">\n';
+                html += '                <span class="text-xs text-slate-400 font-medium">포춘 쿠키를 개봉해 오늘 나와 스트리머의 케미를 점쳐보세요!</span>\n';
+                html += '            </div>\n';
+                html += '            <button onclick="crackCookie()" class="px-5 py-2 text-slate-950 font-bold rounded-lg text-xs transition active:scale-95 shadow-md hover:brightness-110" style="background-color: ' + primary + '">포춘쿠키 개봉 🥠</button>\n';
+                html += '        </div>\n';
+            }
+
+            // 제작자 전용 푸터 크레딧
+            html += '\n        <!-- 제작자 전용 푸터 크레딧 -->\n';
+            html += '        <div class="text-center pt-8 pb-4 text-xs font-bold tracking-wider select-none opacity-45 hover:opacity-100 transition-opacity" style="color: ' + primary + '">\n';
+            html += '            made by. 연주아\n';
+            html += '        </div>\n';
+
+            html += '    </div>\n';
+
+            // 다크모드 대화형 플로팅 스위치 및 글자크기 대화형 플로팅 스위치 세트 구현
+            if (dmSwitch === 'show') {
+                html += '\n    <!-- 실시간 설정 컨트롤러 (다크모드 + 글씨 크기) -->\n';
+                html += '    <div class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 items-end" id="floating-settings-panel">\n';
+                html += '        <!-- 글씨 크기 미세 조정 슬라이드 드로어 -->\n';
+                html += '        <div id="text-resize-drawer" class="hidden items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-2xl shadow-2xl transition-all duration-300">\n';
+                html += '            <button onclick="adjustGeneratedFontSize(-2)" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-black text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition" title="글씨 축소">A-</button>\n';
+                html += '            <button onclick="resetGeneratedFontSize()" class="px-2.5 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition" title="기본 복구">기본</button>\n';
+                html += '            <button onclick="adjustGeneratedFontSize(2)" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-black text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition" title="글씨 확대">A+</button>\n';
+                html += '        </div>\n';
+                html += '        \n';
+                html += '        <div class="flex gap-2">\n';
+                html += '            <!-- 글씨 크기 드로어 토글 버튼 -->\n';
+                html += '            <button onclick="toggleTextDrawer()" class="w-12 h-12 rounded-full shadow-2xl flex items-center justify-center border transition-all active:scale-90 bg-white dark:bg-slate-900 text-slate-800 dark:text-emerald-400 border-slate-200 dark:border-slate-800 hover:shadow-xl" title="글씨 크기 제어">\n';
+                html += '                <i class="fa-solid fa-font text-base"></i>\n';
+                html += '            </button>\n';
+                html += '            \n';
+                html += '            <!-- 다크모드 전환 버튼 -->\n';
+                html += '            <button onclick="toggleGeneratedDarkMode()" class="w-12 h-12 rounded-full shadow-2xl flex items-center justify-center border transition-all active:scale-90 bg-white dark:bg-slate-900 text-slate-800 dark:text-yellow-400 border-slate-200 dark:border-slate-800 hover:shadow-xl" id="dark-mode-toggle-fab" title="테마 변경">\n';
+                html += '                <i class="fa-solid fa-moon text-lg dark:hidden"></i>\n';
+                html += '                <i class="fa-solid fa-sun text-lg hidden dark:block"></i>\n';
+                html += '            </button>\n';
+                html += '        </div>\n';
+                html += '    </div>\n';
+            }
+
+            html += '    <script>\n';
+            html += '        const songList = ' + songsJSON + ';\n';
+            html += '        const fortunes = ' + fortunesJSON + ';\n';
+            html += '        let selectedGenre = "all";\n';
+            // 실시간 폰트 제어 런타임 수치 바인딩
+            html += '        let currentBaseSize = parseInt(\'' + fontSize + '\');\n';
+            html += '        const defaultBaseSize = parseInt(\'' + fontSize + '\');\n';
+
+            html += '        function toggleTextDrawer() {\n';
+            html += '            const drawer = document.getElementById("text-resize-drawer");\n';
+            html += '            if (drawer) {\n';
+            html += '                drawer.classList.toggle("hidden");\n';
+            html += '                drawer.classList.toggle("flex");\n';
+            html += '            }\n';
+            html += '        }\n';
+
+            html += '        function adjustGeneratedFontSize(offset) {\n';
+            html += '            currentBaseSize = Math.max(12, Math.min(26, currentBaseSize + offset));\n';
+            html += '            document.documentElement.style.fontSize = currentBaseSize + "px";\n';
+            html += '            showGeneratedToast("글씨 크기가 " + currentBaseSize + "px로 조정되었습니다.", true);\n';
+            html += '        }\n';
+
+            html += '        function resetGeneratedFontSize() {\n';
+            html += '            currentBaseSize = defaultBaseSize;\n';
+            html += '            document.documentElement.style.fontSize = currentBaseSize + "px";\n';
+            html += '            showGeneratedToast("기본 글씨 크기로 복구되었습니다.", true);\n';
+            html += '        }\n';
+
+            // 다크모드 수동 조절 스크립트 엔진 장착
+            html += '        function toggleGeneratedDarkMode() {\n';
+            html += '            const htmlEl = document.documentElement;\n';
+            html += '            if (htmlEl.classList.contains("dark")) {\n';
+            html += '                htmlEl.classList.remove("dark");\n';
+            html += '                localStorage.setItem("soop_theme", "light");\n';
+            html += '            } else {\n';
+            html += '                htmlEl.classList.add("dark");\n';
+            html += '                localStorage.setItem("soop_theme", "dark");\n';
+            html += '            }\n';
+            html += '        }\n';
+
+            html += '        function initDarkModeTheme() {\n';
+            html += '            const defaultSetting = "' + dmDefault + '";\n';
+            html += '            const saved = localStorage.getItem("soop_theme");\n';
+            html += '            const htmlEl = document.documentElement;\n';
+            html += '            if (saved === "dark") {\n';
+            html += '                htmlEl.classList.add("dark");\n';
+            html += '            } else if (saved === "light") {\n';
+            html += '                htmlEl.classList.remove("dark");\n';
+            html += '            } else if (defaultSetting === "dark") {\n';
+            html += '                htmlEl.classList.add("dark");\n';
+            html += '            } else if (defaultSetting === "system") {\n';
+            html += '                if (window.matchMedia("(prefers-color-scheme: dark)").matches) {\n';
+            html += '                    htmlEl.classList.add("dark");\n';
+            html += '                }\n';
+            html += '            }\n';
+            html += '        }\n';
+
+            html += '        function showGeneratedToast(msg, isSuccess = false) {\n';
+            html += '            let toast = document.getElementById("gen-toast");\n';
+            html += '            if(!toast) {\n';
+            html += '                toast = document.createElement("div");\n';
+            html += '                toast.id = "gen-toast";\n';
+            html += '                toast.className = "fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all duration-300 transform translate-y-10 opacity-0 pointer-events-none";\n';
+            html += '                document.body.appendChild(toast);\n';
+            html += '            }\n';
+            html += '            toast.className = "fixed bottom-24 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-xl text-xs font-bold shadow-lg transition-all duration-300 transform " + (isSuccess ? "bg-emerald-500 text-slate-950" : "bg-rose-500 text-white");\n';
+            html += '            toast.innerText = msg;\n';
+            html += '            setTimeout(() => { toast.classList.remove("translate-y-10", "opacity-0"); }, 10);\n';
+            html += '            setTimeout(() => {\n';
+            html += '                toast.classList.add("translate-y-10", "opacity-0");\n';
+            html += '            }, 2500);\n';
+            html += '        }\n';
+
+            // D-day 계산 엔진
+            html += '        function updateDDayElements() {\n';
+            html += '            const list = ' + JSON.stringify(demoData.anniversaries) + ';\n';
+            html += '            const today = new Date();\n';
+            html += '            today.setHours(0, 0, 0, 0);\n';
+            html += '            list.forEach(item => {\n';
+            html += '                const el = document.getElementById("dday-" + item.id);\n';
+            html += '                if(el) {\n';
+            html += '                    const target = new Date(item.date);\n';
+            html += '                    target.setHours(0, 0, 0, 0);\n';
+            html += '                    const diffTime = today.getTime() - target.getTime();\n';
+            html += '                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));\n';
+            html += '                    if (diffDays === 0) el.innerText = "D-Day";\n';
+            html += '                    else el.innerText = diffDays > 0 ? "+" + diffDays + "일" : diffDays + "일";\n';
+            html += '                }\n';
+            html += '            });\n';
+            html += '        }\n';
+
+            html += '        function filterSongsByTag(tag, element) {\n';
+            html += '            selectedGenre = tag;\n';
+            html += '            document.querySelectorAll(".genre-tab-btn").forEach(btn => {\n';
+            html += '                btn.className = "genre-tab-btn shrink-0 px-4 py-1.5 rounded-full text-xs font-bold transition-all border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900";\n';
+            html += '                btn.classList.remove("genre-tab-active");\n';
+            html += '                btn.style.backgroundColor = "";\n';
+            html += '                btn.style.borderColor = "";\n';
+            html += '                btn.style.color = "";\n';
+            html += '            });\n';
+            html += '            if (element) {\n';
+            html += '                element.classList.add("genre-tab-active");\n';
+            html += '                element.style.backgroundColor = "' + primary + '";\n';
+            html += '                element.style.borderColor = "' + primary + '";\n';
+            html += '                element.style.color = "#ffffff";\n';
+            html += '            }\n';
+            html += '            filterSongsList();\n';
+            html += '        }\n';
+
+            html += '        function filterSongsList() {\n';
+            html += '            const searchVal = (document.getElementById("song-search-box")?.value || "").toLowerCase().trim();\n';
+            html += '            const view = document.getElementById("songs-list-view");\n';
+            html += '            if(!view) return;\n';
+            html += '            view.innerHTML = "";\n';
+            html += '            const filtered = songList.filter(song => {\n';
+            html += '                const matchesGenre = (selectedGenre === "all" || song.tag === selectedGenre);\n';
+            html += '                const matchesSearch = song.title.toLowerCase().includes(searchVal) || song.singer.toLowerCase().includes(searchVal);\n';
+            html += '                return matchesGenre && matchesSearch;\n';
+            html += '            });\n';
+            html += '            if(filtered.length === 0) {\n';
+            html += '                view.innerHTML = \'<div class="text-center text-slate-400 text-xs py-8">검색어와 매치되는 애창곡이 없습니다.</div>\';\n';
+            html += '                return;\n';
+            html += '            }\n';
+            html += '            filtered.forEach(song => {\n';
+            html += '                const div = document.createElement("div");\n';
+            html += '                div.className = "grid grid-cols-12 px-3 py-2.5 items-center text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-all";\n';
+            html += '                const masteryNum = song.mastery || 5;\n';
+            html += '                const filledStars = "★".repeat(masteryNum);\n';
+            html += '                const emptyStars = "☆".repeat(Math.max(0, 5 - masteryNum));\n';
+            html += '                const starHtml = \'<span class="font-mono" style="color: ' + primary + ';">\' + filledStars + \'</span><span class="text-slate-300 dark:text-slate-700 font-mono">\' + emptyStars + \'</span>\';\n';
+            html += '                div.innerHTML = "";\n';
+            html += '                div.innerHTML += \'<div class="col-span-2 text-center"><span class="inline-block text-[9px] px-1.5 py-0.5 rounded-md font-bold" style="background-color: ' + primary + '20; color: ' + primary + '; border: 1px solid ' + primary + '30;">\' + (song.tag || "기타") + \'</span></div>\';\n';
+            html += '                div.innerHTML += \'<div class="col-span-4 pl-2 font-black truncate text-slate-800 dark:text-slate-100">\' + song.title + \'</div>\';\n';
+            html += '                div.innerHTML += \'<div class="col-span-3 text-slate-500 dark:text-slate-400 truncate">\' + song.singer + \'</div>\';\n';
+            html += '                div.innerHTML += \'<div class="col-span-2 text-center text-[10px]">\' + starHtml + \'</div>\';\n';
+            html += '                div.innerHTML += \'<div class="col-span-1 text-center"><button onclick="requestSong(\\\'\' + song.title.replace(/"/g, \'&quot;\') + \'\\\', \\\'\' + song.singer.replace(/"/g, \'&quot;\') + \'\\\')" class="text-white font-bold text-[9px] px-2 py-1 rounded-md shadow-sm active:translate-y-0.5 transition flex items-center justify-center gap-1" style="background-color: ' + primary + ';"><i class="fa-solid fa-microphone text-[8px]"></i> 신청</button></div>\';\n';
+            html += '                view.appendChild(div);\n';
+            html += '            });\n';
+            html += '        }\n';
+
+            html += '        function requestSong(title, singer) {\n';
+            html += '            const copyText = "!신청 " + title + " - " + singer;\n';
+            html += '            const temp = document.createElement("textarea");\n';
+            html += '            temp.value = copyText;\n';
+            html += '            document.body.appendChild(temp);\n';
+            html += '            temp.select();\n';
+            html += '            document.execCommand("copy");\n';
+            html += '            document.body.removeChild(temp);\n';
+            html += '            showGeneratedToast("🎙️ \'" + title + "\' 신청곡 명령어가 복사되었습니다! 채팅창에 그대로 붙여넣어 보세요.");\n';
+            html += '        }\n';
+
+            html += '        function crackCookie() {\n';
+            html += '            if (!fortunes || fortunes.length === 0) return;\n';
+            html += '            const rand = fortunes[Math.floor(Math.random() * fortunes.length)];\n';
+            html += '            const score = Math.floor(Math.random() * 51) + 50;\n';
+            html += '            const box = document.getElementById("fortune-box");\n';
+            html += '            if(box) {\n';
+            html += '                box.innerHTML = \'<div class="text-center"><span class="block text-sm font-black text-rose-500 mb-1">❤️ 케미 지수: \' + score + \'%</span><span class="text-xs font-semibold text-slate-700 dark:text-slate-200 leading-normal">\' + rand.emoji + \' \' + rand.text + \'</span></div>\';\n';
+            html += '            }\n';
+            html += '        }\n';
+
+            html += '        window.onload = function() {\n';
+            html += '            initDarkModeTheme();\n';
+            html += '            if (typeof filterSongsList === "function") filterSongsList();\n';
+            html += '            updateDDayElements();\n';
+            html += '        }\n';
+            html += '    <' + '/script>\n';
+            html += '</body>\n</html>';
+
+            return html;
+        }
+
+        function updatePreview() {
+            const htmlContent = generateHTMLCode();
+            const iframe = document.getElementById('preview-iframe');
+            if (iframe && iframe.contentWindow) {
+                const doc = iframe.contentWindow.document;
+                doc.open();
+                doc.write(htmlContent);
+                doc.close();
+            }
+        }
+
+        function openCodeModal() {
+            const code = generateHTMLCode();
+            document.getElementById('code-output-area').innerText = code;
+            document.getElementById('code-modal').classList.remove('hidden');
+        }
+
+        function closeCodeModal() {
+            document.getElementById('code-modal').classList.add('hidden');
+        }
+
+        function copyGeneratedCode() {
+            const code = generateHTMLCode();
+            const textarea = document.createElement('textarea');
+            textarea.value = code;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast("🎉 코드가 클립보드에 완벽하게 복사되었습니다!");
+        }
+
+        function downloadHTMLFile() {
+            const code = generateHTMLCode();
+            const blob = new Blob([code], { type: 'text/html;charset=utf-8;' });
+            const link = document.createElement('a');
+            const fileName = `${document.getElementById('data-name').value || 'soop_profile'}_index.html`;
+
+            if (navigator.msSaveBlob) { 
+                navigator.msSaveBlob(blob, fileName);
+            } else {
+                link.href = URL.createObjectURL(blob);
+                link.setAttribute('download', fileName);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+            showToast("💾 프로필 index.html 다운로드 성공!");
+        }
+
+        document.getElementById('btn-load-demo').addEventListener('click', loadDemoData);
+        document.getElementById('btn-export-html').addEventListener('click', openCodeModal);
+
+        window.onload = function() {
+            renderPresetsGrid();
+            renderModulesSelector();
+            loadDemoData(); 
+        }
+    </script>
+</body>
+</html>
